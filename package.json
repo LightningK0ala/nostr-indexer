@@ -59,6 +59,7 @@
   },
   "dependencies": {
     "@prisma/client": "4.9.0",
+    "chalk": "^4.1.0",
     "just-pick": "4.2.0",
     "nostr-tools": "1.2.0"
   },

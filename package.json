@@ -1,0 +1,68 @@
+{
+  "version": "0.1.0",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "engines": {
+    "node": ">=10"
+  },
+  "scripts": {
+    "start": "tsdx watch",
+    "build": "tsdx build",
+    "test": "tsdx test",
+    "test:watch": "tsdx test --watch",
+    "lint": "tsdx lint",
+    "prepare": "tsdx build",
+    "size": "size-limit",
+    "analyze": "size-limit --why",
+    "prisma:client": "prisma client",
+    "prisma:migrate:dev": "prisma migrate dev"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "tsdx lint"
+    }
+  },
+  "prettier": {
+    "printWidth": 80,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "name": "nostr-indexer",
+  "author": "Lightning K0ala",
+  "module": "dist/nostr-indexer.esm.js",
+  "size-limit": [
+    {
+      "path": "dist/nostr-indexer.cjs.production.min.js",
+      "limit": "10 KB"
+    },
+    {
+      "path": "dist/nostr-indexer.esm.js",
+      "limit": "10 KB"
+    }
+  ],
+  "devDependencies": {
+    "@size-limit/preset-small-lib": "8.1.2",
+    "@types/jest": "^29.4.0",
+    "husky": "8.0.3",
+    "jest-mock-extended": "3.0.1",
+    "prisma": "4.9.0",
+    "size-limit": "8.1.2",
+    "tsdx": "0.14.1",
+    "tslib": "2.4.1",
+    "typescript": "4.9.4"
+  },
+  "dependencies": {
+    "@prisma/client": "4.9.0",
+    "just-pick": "4.2.0",
+    "nostr-tools": "1.2.0"
+  },
+  "prisma": {
+    "seed": "npx ts-node prisma/seed.ts"
+  }
+}

@@ -1,0 +1,108 @@
+import { Event, Filter, RelayInit, Sub } from '../@types/nostr-tools-shim';
+import { Logger } from './Logger';
+import { Relay } from './Relay';
+import { Subscription } from './Subscription';
+import { sha1Hash } from '../utils/crypto';
+import { DbClient, DbRelay } from './DbClient';
+
+export class RelayManager {
+  private _db: DbClient;
+  private _relays = new Map<number, Relay>();
+  private _logger: Logger;
+  // Key is the hash for the stringified subscription filters
+  private _subscriptions = new Map<string, Subscription>();
+  private _relayInit: RelayInit;
+
+  constructor({
+    db,
+    logger,
+    relayInit,
+  }: {
+    db: DbClient;
+    logger: Logger;
+    relayInit: RelayInit;
+  }) {
+    this._db = db;
+    this._logger = logger;
+    this._relayInit = relayInit;
+  }
+
+  get subscriptions() {
+    return this._subscriptions;
+  }
+
+  get relays() {
+    return this._relays;
+  }
+
+  get connectedRelays() {
+    return Array.from(this._relays.values()).filter(
+      (relay: Relay) => relay.connected
+    );
+  }
+
+  async setup() {
+    this._logger.log('Loading relays from db');
+    const relays = await this._db.getRelays();
+    relays.forEach(({ id, url }: DbRelay) => this.setupNewRelay({ id, url }));
+  }
+
+  private setupNewRelay({ id, url }: { id: number; url: string }) {
+    const relay = new Relay({
+      id,
+      url,
+      logger: this._logger,
+      relayInit: this._relayInit,
+    });
+    relay.connect();
+    this._relays.set(id, relay);
+  }
+
+  async teardown() {
+    // log('Disconnecting relays');
+    // TODO
+    // disconnect each relay and clear the array
+    this._relays.forEach(async relay => {
+      await relay.disconnect();
+    });
+    this._relays.clear();
+  }
+
+  async addRelay(url: string) {
+    const { id } = await this._db.createRelay({ url });
+    this.setupNewRelay({ id, url });
+  }
+
+  addSubscription({
+    filters,
+    closeOnEose,
+    onEvent = () => {},
+    onEose = () => {},
+  }: {
+    filters: Filter[];
+    closeOnEose: boolean;
+    onEvent?: (event: Event) => void;
+    onEose?: (sub: Sub) => void;
+  }) {
+    this._logger.log('Adding subscription to relay manager');
+    const subscription = new Subscription({
+      filters,
+      closeOnEose,
+      onEvent,
+      onEose,
+    });
+    this._subscriptions.set(subscription.id, subscription);
+    // Register the subscription in every relay
+    this._relays.forEach(relay => relay.subscribe(subscription));
+    return subscription.id;
+  }
+
+  removeSubscription(id: string) {
+    this._subscriptions.delete(id);
+  }
+
+  hasSubscription(filters: Filter[]) {
+    const id = sha1Hash(JSON.stringify(filters));
+    return this._subscriptions.has(id);
+  }
+}

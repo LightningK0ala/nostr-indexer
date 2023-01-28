@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id          Int      @id @default(autoincrement())
+  pubkey      String   @unique
+  private_key String?  @unique
+  user        User     @relation(fields: [user_id], references: [id])
+  user_id     Int      @unique
+  added_at    DateTime @default(now())
+}
+
+model User {
+  id       Int       @id @default(autoincrement())
+  pubkey   String    @unique
+  account  Account?
+  metadata Metadata?
+  added_at DateTime  @default(now())
+}
+
+model Metadata {
+  id           Int     @id @default(autoincrement())
+  user         User    @relation(fields: [user_id], references: [id])
+  user_id      Int     @unique
+  event        Event   @relation(fields: [event_id], references: [id])
+  event_id     Int     @unique
+  lud06        String?
+  website      String?
+  nip05        String?
+  picture      String?
+  display_name String?
+  banner       String?
+  about        String?
+  name         String?
+}
+
+model Relay {
+  id       Int      @id @default(autoincrement())
+  url      String   @unique
+  added_at DateTime @default(now())
+}
+
+model Event {
+  id              Int       @id @default(autoincrement())
+  metadata        Metadata?
+  event_id        String    @unique
+  event_signature String
+  event_kind      Int
+  event_pubkey    String
+  event_content   String?
+  event_tags      String?
+  // Refactor this to event_created_at?
+  event_createdAt DateTime
+  added_at        DateTime  @default(now())
+}

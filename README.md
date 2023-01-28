@@ -1,27 +1,30 @@
-> WARNING: This project is still under heavy development. Use at your own risk.
+> WARNING: This project is still under heavy development. There are many features still missing and no security audits have been made. Use at your own risk.
 
-# nostr-indexer
+# 🔍 nostr-indexer
 
-An indexer for nostr events that can be installed as an npm package for your backend projects. It can be used to build:
+An indexer for nostr events that can be installed as an npm package for your backend projects. It can be used as a backbone to build:
 
-- Lightweight data bank / node for your nostr data along with the people you follow / interact with (eg. through DMs). This can easily run on a device like a raspberry pi or be integrated into an umbrel node.
+- Lightweight node for your personal nostr data and social graph.
 - REST / GraphQL / tRPC backend to power a lightweight client application.
 - Event notification system.
-- etc...
+- AI powered content filter (block dic pics)
+- ...?
 
-## Why?
+nostr-indexer abstracts the connections and subscriptions made to relays and provides a simple interface to configure + retrieve data from the indexer. Data is stored in an sqlite database and available to be queried using SQL or built-in functions.
 
-Almost all nostr clients currently are communicating with relays directly. This can pose several problems like:
+## 🤷‍♂️ Why?
 
-- The data you care about is not immediately available when you open your client, this isn't great UX for what users expect from modern social media applications.
-- Even if clients can sync in the background, issues like battery consumption, network bandwidth, storage crop up.
-- Without background syncing, notifications can't be easily implemented without relying on third parties.
-- Relay query language is very limited for things like figuring out your DM contact list.
-- The experience across multiple devices will vary because there isn't a single source of truth for your data.
-- DX can be greatly simplified if we can rely on common data fetching patterns other than just websockets.
-- etc...
+Almost all nostr clients currently are communicating with relays directly. This can be problematic:
 
-## Getting Started
+- Data you care about is not immediately available, when you open most of the existing apps, data trickles in.
+- Background syncing is hard to implement in some cases (eg. web / PWAs) and will put a strain on mobile device's battery life, bandwidth and storage.
+- There is no single source of truth for your data and social graph so your experience on different devices can be inconsistent.
+- Notifications are harder to implement without relying on third parties.
+- Developer experience can be simplified if we can fetch data using common patterns like REST, GraphQL, tRPC...
+
+nostr-indexer will be useful for those who want to build something that can take the computational load of sorting their nostr data, is always on and available on a server (locally or remotely).
+
+## 🚀 Getting Started
 
 ### 1. Installation
 
@@ -35,11 +38,11 @@ yarn add nostr-indexer
 DATABASE_URL=file:<FULL_PATH_TO_DB_FILE> npx prisma migrate reset --schema ./node_modules/nostr-indexer/prisma/schema.prisma
 ```
 
-Substitute `<FULL_PATH_TO_DB_FILE>` with the full absolute path to your db file, eg. `~/my-project/nostr.db`
+Substitute `<FULL_PATH_TO_DB_FILE>` with the full absolute path to your db file, eg. `/my-project/nostr.db`
 
 ### 3. Usage
 
-TODO: Add usage example
+Some vanilla javascript code that you can try putting into a `index.js` and running with `DB_PATH=<FULL_PATH_TO_DB_FILE> node index.js`
 
 ```
 (async () => {
@@ -73,10 +76,21 @@ TODO: Add usage example
 })();
 ```
 
-Substitute `<FULL_PATH_TO_DB_FILE>` with the same path used in step 2.
+## Projects
+Example projects using nostr-indexer:
+- [nostr-indexer-graphql](https://github.com/LightningK0ala/nostr-indexer-graphql): A GraphQL server exposing an API for nostr-indexer data.
+- [nostr-indexer-cli](https://github.com/LightningK0ala/nostr-indexer-cli): An interactive cli for nostr-indexer.
 
-## Development
+## Contributions
+Contributions are welcome! If you build anything with this library please make a pull request to include a link to it.
 
-### Gotchas
-
-src/index.ts needs to export lib file for file changes to be detected. Probably just a ts config issue.
+## Roadmap
+- [x] Add relay.
+- [x] Add account.
+- [x] Index metadata.
+- [ ] Emit event when new data is indexed.
+- [ ] Allow event to be consumed with a listener or callback.
+- [ ] Index followers + n.
+- [ ] Index DMs.
+- [ ] Index notes.
+- [ ] Index channels.

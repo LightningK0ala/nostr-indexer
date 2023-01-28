@@ -19,7 +19,7 @@
     "prepare": "yarn build",
     "size": "size-limit",
     "analyze": "size-limit --why",
-    "prisma:client": "prisma client",
+    "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev"
   },
   "husky": {

@@ -42,8 +42,35 @@ Substitute `<FULL_PATH_TO_DB_FILE>` with the full absolute path to your db file,
 TODO: Add usage example
 
 ```
-import { Indexer } from 'nostr-indexer'
-const indexer = new Indexer({ dbPath: <FULL_PATH_TO_DB_FILE> })
+(async () => {
+  const nostr = require('nostr-indexer')
+
+  /** @type {import('nostr-indexer').Indexer} */
+  // Create the indexer, passing in the path to the database
+  const nostrIndexer = nostr.createIndexer({
+    dbPath: process.env.DB_PATH,
+    // debug: true
+  })
+
+  // Add relays
+  nostrIndexer.relayManager.addRelay("wss://nostr.fmt.wiz.biz")
+  nostrIndexer.relayManager.addRelay("wss://jiggytom.ddns.net")
+
+  // Start
+  nostrIndexer.start()
+
+  /** @type {import('nostr-indexer').Account} */
+  // Add an account to index
+  const account = await nostrIndexer.accountManager.addAccount({
+    pubkey: "63c3f814e38f0b5bd64515a063791a0fdfd5b276a31bae4856a16219d8aa0d1f"
+  })
+
+  setInterval(async () => {
+    // Metadata is logged every second. If any changes get published to one of the relays,
+    // the indexer will pick them up and they will be reflected here.
+    console.log("Metadata:", await account.getMetadata())
+  }, 1000)
+})();
 ```
 
 Substitute `<FULL_PATH_TO_DB_FILE>` with the same path used in step 2.

@@ -9,7 +9,7 @@ const prisma = new PrismaClient({
 async function main() {
   await prisma.relay.create({ data: { url: 'wss://nostr.zebedee.cloud' } });
   await prisma.relay.create({ data: { url: 'wss://jiggytom.ddns.net' } });
-  await prisma.relay.create({ data: { url: ' wss://nostr.fmt.wiz.biz' } });
+  await prisma.relay.create({ data: { url: 'wss://nostr.fmt.wiz.biz' } });
   await prisma.relay.create({ data: { url: 'wss://nostr.onsats.org' } });
   await prisma.relay.create({ data: { url: 'wss://relay.damus.io' } });
   await prisma.relay.create({ data: { url: 'wss://nostr-pub.wellorder.net' } });

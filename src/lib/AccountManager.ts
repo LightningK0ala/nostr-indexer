@@ -41,11 +41,13 @@ export class AccountManager {
         privateKey: private_key ? private_key : undefined,
         relayManager: this._relayManager,
       });
+      if (this._accounts.has(pubkey)) return;
       account.indexAccount();
       this._accounts.set(pubkey, account);
     });
   }
 
+  // Add an account, if an account already exists in db we load it
   async addAccount({
     pubkey,
     privateKey,
@@ -56,18 +58,25 @@ export class AccountManager {
     if (privateKey) throw new Error('Not currently supported');
     // Ensure pubkey is in hex format
     const hexPubkey = Account.convertPubkeyToHex(pubkey);
-    const { id, user_id: userId } = await this._db.createAccount({
-      pubkey: hexPubkey,
-    });
+    let dbAccount: DbAccount | null;
+    dbAccount = await this._db.getAccount({ pubkey: hexPubkey });
+    if (!dbAccount) {
+      dbAccount = await this._db.createAccount({
+        pubkey: hexPubkey,
+      });
+    }
+    if (!dbAccount) throw new Error('Failed to create account');
     const account = new Account({
-      id,
-      userId,
+      id: dbAccount.id,
+      userId: dbAccount.user_id,
       db: this._db,
       logger: this._logger,
       pubkey: hexPubkey,
       relayManager: this._relayManager,
     });
-    this._accounts.set(hexPubkey, account);
+    if (this._accounts.has(hexPubkey)) return account;
     account.indexAccount();
+    this._accounts.set(hexPubkey, account);
+    return account;
   }
 }

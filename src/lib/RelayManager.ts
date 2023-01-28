@@ -44,10 +44,13 @@ export class RelayManager {
   async setup() {
     this._logger.log('Loading relays from db');
     const relays = await this._db.getRelays();
-    relays.forEach(({ id, url }: DbRelay) => this.setupNewRelay({ id, url }));
+    relays.forEach(({ id, url }: DbRelay) => {
+      this.setupNewRelay({ id, url });
+    });
   }
 
   private setupNewRelay({ id, url }: { id: number; url: string }) {
+    if (this._relays.has(id)) return;
     const relay = new Relay({
       id,
       url,
@@ -69,8 +72,13 @@ export class RelayManager {
   }
 
   async addRelay(url: string) {
-    const { id } = await this._db.createRelay({ url });
-    this.setupNewRelay({ id, url });
+    let dbRelay: DbRelay | null;
+    dbRelay = await this._db.getRelay({ url });
+    if (!dbRelay) {
+      dbRelay = await this._db.createRelay({ url });
+    }
+    if (!dbRelay) return;
+    this.setupNewRelay({ id: dbRelay.id, url: dbRelay.url });
   }
 
   addSubscription({

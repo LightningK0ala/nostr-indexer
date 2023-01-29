@@ -43,7 +43,7 @@ export class RelayManager {
 
   async setup() {
     this._logger.log('Loading relays from db');
-    const relays = await this._db.getRelays();
+    const relays = await this._db.client.relay.findMany();
     relays.forEach(({ id, url }: DbRelay) => {
       this.setupNewRelay({ id, url });
     });
@@ -59,6 +59,8 @@ export class RelayManager {
     });
     relay.connect();
     this._relays.set(id, relay);
+    // Add all existing subscriptions to the relay
+    this._subscriptions.forEach(subscription => relay.subscribe(subscription));
   }
 
   async teardown() {
@@ -73,12 +75,13 @@ export class RelayManager {
 
   async addRelay(url: string) {
     let dbRelay: DbRelay | null;
-    dbRelay = await this._db.getRelay({ url });
+    dbRelay = await this._db.client.relay.findUnique({ where: { url } });
     if (!dbRelay) {
       dbRelay = await this._db.createRelay({ url });
     }
-    if (!dbRelay) return;
+    if (!dbRelay) throw new Error('Failed to create relay');
     this.setupNewRelay({ id: dbRelay.id, url: dbRelay.url });
+    return dbRelay;
   }
 
   addSubscription({

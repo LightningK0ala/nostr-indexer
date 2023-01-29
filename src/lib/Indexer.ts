@@ -52,14 +52,25 @@ export class Indexer {
   }
 
   get accountManager() {
+    this._db.client.user.findUnique({ where: { id: 1 } });
     return this._accountManager;
+  }
+
+  get subscriptions() {
+    return this._relayManager.subscriptions;
+  }
+
+  async addRelay(url: string) {
+    return this.relayManager.addRelay(url);
+  }
+
+  async addAccount(pubkey: string) {
+    return this.accountManager.addAccount({ pubkey });
   }
 
   async dbFileSize() {
     return (await fs.promises.stat(this._config.dbPath)).size;
   }
-
-  setConfig() {}
 
   async start() {
     if (this.startedAt) return false;
@@ -78,13 +89,4 @@ export class Indexer {
     // TODO: Stop relay manager
     return true;
   }
-
-  prune() {}
-  size() {}
-  watchPubKey() {}
-  unwatchPubKey() {}
-
-  removeRelay() {}
-  watchChannel() {}
-  unwatchChannel() {}
 }

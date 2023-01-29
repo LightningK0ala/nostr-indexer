@@ -26,28 +26,6 @@ export class DbClient {
     return this._db;
   }
 
-  // NOTE: It doesn't seem possible to import Prisma namespace input args types without crashing compiler
-
-  async getAccount(where: { pubkey: string }) {
-    return this._db.account.findUnique({ where });
-  }
-
-  async getMetadata(where: { user_id: number }) {
-    return this._db.metadata.findUnique({ where });
-  }
-
-  async getAccounts() {
-    return this._db.account.findMany();
-  }
-
-  async getRelay(where: { id?: number; url?: string }) {
-    return this._db.relay.findUnique({ where });
-  }
-
-  async getRelays() {
-    return this._db.relay.findMany();
-  }
-
   async createAccount({ pubkey }: { pubkey: string }) {
     return this._db.account.create({
       data: { pubkey, user: { create: { pubkey } } },

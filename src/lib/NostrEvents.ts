@@ -59,6 +59,7 @@ export class Kind0Event extends NostrEvent {
         'website',
         'nip05',
         'picture',
+        'banner',
         'display_name',
         'about',
         'name',

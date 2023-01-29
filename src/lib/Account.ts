@@ -69,10 +69,6 @@ export class Account {
     return hexPubkey;
   }
 
-  async getMetadata() {
-    return this._db.getMetadata({ user_id: this._userId });
-  }
-
   // NIP-01
   // https://github.com/nostr-protocol/nips/blob/master/01.md
   // Kinds: 0 = metadata, 1 = text note, 2 = recommend_server

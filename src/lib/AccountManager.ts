@@ -28,9 +28,13 @@ export class AccountManager {
     return this._accounts;
   }
 
+  indexAllAccounts() {
+    this._accounts.forEach(account => account.indexAccount());
+  }
+
   async setup() {
     this._logger.log('AccountManager setup');
-    const accts = await this._db.getAccounts();
+    const accts = await this._db.client.account.findMany();
     accts.forEach(({ id, user_id: userId, pubkey, private_key }: DbAccount) => {
       const account = new Account({
         id,
@@ -59,7 +63,7 @@ export class AccountManager {
     // Ensure pubkey is in hex format
     const hexPubkey = Account.convertPubkeyToHex(pubkey);
     let dbAccount: DbAccount | null;
-    dbAccount = await this._db.getAccount({ pubkey: hexPubkey });
+    dbAccount = await this._db.client.account.findUnique({ where: { pubkey } });
     if (!dbAccount) {
       dbAccount = await this._db.createAccount({
         pubkey: hexPubkey,
@@ -74,9 +78,9 @@ export class AccountManager {
       pubkey: hexPubkey,
       relayManager: this._relayManager,
     });
-    if (this._accounts.has(hexPubkey)) return account;
+    if (this._accounts.has(hexPubkey)) return dbAccount;
     account.indexAccount();
     this._accounts.set(hexPubkey, account);
-    return account;
+    return dbAccount;
   }
 }

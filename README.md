@@ -16,7 +16,7 @@ Almost all nostr clients currently are communicating with relays directly. This 
 
 - Data you care about is not immediately available, when you open most of the existing apps, you have to wait for data to trickle in.
 - Background syncing is not trivial, specially for web / PWAs. Battery life, storage and bandwidth are things to consider on mobile devices.
-- There is no single source of truth for your data and social graph so your experience on different devices can be inconsistent.
+- There is no single source of truth for your data and social graph so your experience on different devices / clients can be inconsistent.
 - Notifications are harder to implement without relying on third parties.
 - Developer experience can be simplified if we can fetch data using common patterns like REST, GraphQL, tRPC...
 

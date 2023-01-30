@@ -32,7 +32,7 @@ Almost all nostr clients currently are communicating with relays directly. This 
 
 See the [database schema](prisma/schema.prisma) for more information about what columns each table has.
 
-A Prisma ORM client is exposed by the indexer for database queries (see code example).
+A Prisma ORM client is exposed by the indexer for database queries (see usage section below).
 There are also some functions provided by the indexer to give you information about the status of the indexer.
 
 # 🚀 Getting Started

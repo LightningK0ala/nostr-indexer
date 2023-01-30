@@ -39,13 +39,13 @@ There are also some functions provided by the indexer to give you information ab
 
 ### 1. Installation
 
-```
+```console
 yarn add nostr-indexer
 ```
 
 ### 2. Setup Database
 
-```
+```console
 DATABASE_URL=file:<FULL_PATH_TO_DB_FILE> npx prisma migrate reset --schema ./node_modules/nostr-indexer/dist/prisma/schema.prisma
 ```
 
@@ -55,7 +55,7 @@ Substitute `<FULL_PATH_TO_DB_FILE>` with the full absolute path to your db file,
 
 Some vanilla javascript code that you can try putting into a `index.js` and running with `DB_PATH=<FULL_PATH_TO_DB_FILE> node index.js`
 
-```
+```js
 (async () => {
   const nostr = require('nostr-indexer')
 

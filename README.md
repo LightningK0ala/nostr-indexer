@@ -22,7 +22,7 @@ Almost all nostr clients currently are communicating with relays directly. This 
 
 ## 🔌 How?
 
-`nostr-indexer` lets you add accounts (your pubkeys) to the indexer and configure the relays you want to use. The indexer will automatically subscribe to relays for nostr events about relevant to your account and social graph and insert it into an sqlite relational database. Data is indexed into multiple tables to enable a structured and efficient querying using SQL:
+`nostr-indexer` lets you add accounts (your pubkeys) to the indexer and configure the relays you want to use. The indexer will automatically subscribe to relays for nostr events relevant to your account and social graph. Data is indexed and stored in a relational SQL database (sqlite), into multiple tables to enable structured and efficient querying:
 
 - `Account`: Represents an account to be indexed, these can be added using the indexer `.addAccount(pubkey)` function.
 - `User`: Represents a user in nostr.
@@ -110,3 +110,4 @@ Contributions are welcome! If you build anything with this library please make a
 - [ ] Emit event when new data is indexed.
 - [ ] Allow new events to be consumed via listener or callback.
 - [ ] Allow accounts with private keys (for searchable encrypted DMs? ...?)
+- [ ] Support other Prisma database connectors

@@ -109,5 +109,6 @@ Contributions are welcome! If you build anything with this library please make a
 - [ ] Publish events.
 - [ ] Emit event when new data is indexed.
 - [ ] Allow new events to be consumed via listener or callback.
-- [ ] Allow accounts with private keys (for searchable encrypted DMs? ...?)
-- [ ] Support other Prisma database connectors
+- [ ] Allow accounts with private keys (for searchable encrypted DMs? ...?).
+- [ ] Support other Prisma database connectors.
+- [ ] Prometheus monitoring.

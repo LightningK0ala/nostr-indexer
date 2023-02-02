@@ -1,4 +1,4 @@
-> WARNING: This project is still under heavy development. There are many features still missing and no security audits have been made. Use at your own risk.
+> WARNING: This project is still under heavy development. Currently undergoing rearchitecting. There are many features still missing and no security audits have been made. Use at your own risk.
 
 # 🔍 nostr-indexer
 
@@ -19,21 +19,16 @@ Almost all nostr clients currently are communicating with relays directly. This 
 - There is no single source of truth for your data and social graph so your experience on different devices / clients can be inconsistent.
 - Notifications are harder to implement without relying on third parties.
 - Developer experience can be simplified if we can fetch data using common patterns like REST, GraphQL, tRPC...
+- Replicating your posted data to a new relay might be an issue if your client doesn't hold a full cache / provide that feature.
+- Without a full client cache, your data can be permanently lost as there is no guarantee that relays will hold it / remain online.
 
 ## 🔌 How?
+`nostr-indexer` is like your own personal mini-relay.
+You start by telling it your account public key and the relays you post to. The indexer then fetches all your personal data and your social graph, making decisions about which relays to fetch from and which data is relevant to you. It indexes this data and provides a convenient set of functions to interact with it.
 
-`nostr-indexer` lets you add accounts (your pubkeys) to the indexer and configure the relays you want to use. The indexer will automatically subscribe to relays for nostr events relevant to your account and social graph. Data is indexed and stored in a relational SQL database (sqlite), into multiple tables to enable structured and efficient querying:
-
-- `Account`: Represents an account to be indexed, these can be added using the indexer `.addAccount(pubkey)` function.
-- `User`: Represents a user in nostr.
-- `Metadata`: Holds metadata information for users (NIP-01 Kind 0).
-- `Relay`: Relays that have been configured for the indexer to use. At the moment use `.addRelay(url)` provided in the indexer.
-- `Event`: Stores all raw events that were indexed. Useful to keep as a reference or backup. Can eventually be used to sync events to a new relay or for reindexing from scratch.
+Additionally, the database can be queried directly by using the exposed prisma db client.
 
 See the [database schema](prisma/schema.prisma) for more information about what columns each table has.
-
-A Prisma ORM client is exposed by the indexer for database queries (see usage section below).
-There are also some functions provided by the indexer to give you information about the status of the indexer.
 
 # 🚀 Getting Started
 
@@ -95,20 +90,3 @@ Example projects using nostr-indexer:
 ## Contributions
 
 Contributions are welcome! If you build anything with this library please make a pull request to include a link to it.
-
-## Roadmap
-
-- [x] Add relay.
-- [x] Add account.
-- [x] Index metadata.
-- [ ] Index followers + n.
-- [ ] Index DMs.
-- [ ] Index notes.
-- [ ] Index channels.
-- [ ] Prepare unsigned events to publish.
-- [ ] Publish events.
-- [ ] Emit event when new data is indexed.
-- [ ] Allow new events to be consumed via listener or callback.
-- [ ] Allow accounts with private keys (for searchable encrypted DMs? ...?).
-- [ ] Support other Prisma database connectors.
-- [ ] Prometheus monitoring.

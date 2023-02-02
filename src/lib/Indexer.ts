@@ -64,8 +64,8 @@ export class Indexer {
     return this.relayManager.addRelay(url);
   }
 
-  async addAccount(pubkey: string) {
-    return this.accountManager.addAccount({ pubkey });
+  async addAccount(opts: { pubkey: string; relays: string[] }) {
+    return this.accountManager.addAccount(opts);
   }
 
   async dbFileSize() {

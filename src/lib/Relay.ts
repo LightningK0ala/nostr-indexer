@@ -1,30 +1,27 @@
-import { NostrRelay } from '../@types/nostr-tools-shim';
+import { relayInit } from 'nostr-tools';
+import { Event, Filter, NostrRelay, Sub } from '../@types/nostr-tools-shim';
+import EventProcessor from './EventProcessor';
 import { Logger } from './Logger';
-import { Subscription } from './Subscription';
 
 export class Relay {
-  private _id: number;
+  private _id?: number;
   private _url: string;
   private _connected: boolean = false;
   private _relay: NostrRelay;
   private _logger: Logger;
-  private _subscriptions = new Map<string, Subscription>();
+  private _eventProcessor: EventProcessor;
 
-  constructor({
-    id,
-    url,
-    logger,
-    relayInit,
-  }: {
-    id: number;
+  constructor(opts: {
+    id?: number;
     url: string;
     logger: Logger;
-    relayInit: (url: string) => NostrRelay;
+    eventProcessor: EventProcessor;
   }) {
-    this._id = id;
-    this._url = url;
-    this._logger = logger;
-    this._relay = relayInit(url) as any;
+    this._id = opts.id;
+    this._url = opts.url;
+    this._logger = opts.logger;
+    this._eventProcessor = opts.eventProcessor;
+    this._relay = relayInit(this._url);
     this._relay.on('connect', () => {
       this._logger.log(`Connected to relay ${this._url}`);
       this._connected = true;
@@ -36,8 +33,6 @@ export class Relay {
     });
 
     this._relay.on('disconnect', () => {
-      // TODO
-      // - Implement a smarter reconnect strategy, eg. with throttle / exponential backoff
       this._logger.log(`Disconnected from relay ${this._url}`);
       this._connected = false;
     });
@@ -68,14 +63,27 @@ export class Relay {
     await this._relay.close();
   }
 
-  subscribe(subscription: Subscription) {
-    const { onEvent, onEose } = subscription;
-    const sub = this._relay.sub(subscription.filters);
-    // keep a reference to the sub so we can close it later if necessary
-    subscription.sub = sub;
-    this._subscriptions.set(subscription.id, subscription);
-    onEvent && sub.on('event', onEvent);
-    onEose && sub.on('eose', () => onEose(sub));
+  async subscribeSync(opts: {
+    filters: Filter[];
+    onEose?: (sub: Sub) => void;
+  }): Promise<Sub> {
+    return new Promise(resolve => {
+      this.subscribe({
+        ...opts,
+        onEose: (sub: Sub) => {
+          resolve(sub);
+        },
+      });
+    });
+  }
+
+  async subscribe(opts: { filters: Filter[]; onEose?: (sub: Sub) => void }) {
+    const sub = this._relay.sub(opts.filters);
+    sub.on('event', (e: Event) => this._eventProcessor.addEvent(e));
+    opts.onEose &&
+      sub.on('eose', () => {
+        opts.onEose && opts.onEose(sub);
+      });
     return sub;
   }
 

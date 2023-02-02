@@ -3,8 +3,8 @@ import { Config } from './lib/Config';
 import { Indexer } from './lib/Indexer';
 import { RelayManager } from './lib/RelayManager';
 import { Logger } from './lib/Logger';
-import { relayInit } from 'nostr-tools';
 import { DbClient } from './lib/DbClient';
+import EventProcessor from './lib/EventProcessor';
 
 // Shim Websocket for NodeJS
 Object.assign(global, { WebSocket: require('ws') });
@@ -13,11 +13,13 @@ export const createIndexer = (cfg: Config) => {
   const config = new Config(cfg);
   const logger = new Logger({ config });
   const db = new DbClient({ dbPath: cfg.dbPath, logger });
-  const relayManager = new RelayManager({ db, logger, relayInit });
+  const eventProcessor = new EventProcessor({ db, logger });
+  const relayManager = new RelayManager({ db, logger, eventProcessor });
   const accountManager = new AccountManager({
     db,
     logger,
     relayManager,
+    eventProcessor,
   });
 
   return new Indexer({

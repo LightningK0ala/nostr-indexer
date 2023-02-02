@@ -26,14 +26,14 @@ export class DbClient {
     return this._db;
   }
 
-  async createAccount({ pubkey }: { pubkey: string }) {
-    return this._db.account.create({
-      data: { pubkey, user: { create: { pubkey } } },
-    });
+  // TODO: Fix
+  async createAccount(_opts: { pubkey: string }) {
+    return null
   }
 
-  async createRelay({ url }: { url: string }) {
-    return this._db.relay.create({ data: { url } });
+  // TODO: Fix
+  async createRelay(_opts: { url: string }) {
+    return null
   }
 
   async createMetadata({
@@ -69,7 +69,7 @@ export class DbClient {
         if (existingMetadata.event.event_id == event.id)
           return existingMetadata;
         // 3. If event is older than current return.
-        if (existingMetadata.event.event_createdAt.getTime() > event.created_at)
+        if (existingMetadata.event.event_created_at.getTime() > event.created_at)
           return existingMetadata;
 
         // 3. Otherwise, create a new event, delete the old and update the metadata record.

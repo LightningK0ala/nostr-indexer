@@ -13,8 +13,12 @@ export default class EventProcessor {
   }
 
   // TODO: Remove this getter
-  get db {
-    return this._db
+  get db() {
+    return this._db;
+  }
+
+  get eventQueue() {
+    return this._eventQueue;
   }
 
   addEvent(e: Event): Boolean {
@@ -26,16 +30,18 @@ export default class EventProcessor {
     return true;
   }
 
-  processEvents(): Boolean {
+  async processEvents(): Promise<boolean> {
     // Skip if event queue is empty
     if (this._eventQueue.length == 0) return false;
-    const [event, ...rest] = this._eventQueue;
-    this._eventQueue = rest;
-    this.processEvent(event);
+    const [event, ...remaining] = this._eventQueue;
+    // TODO: Move this until after we've processed the event
+    await this.processEvent(event);
+    this._eventQueue = remaining;
     return true;
   }
 
-  processEvent(e: Event) {
+  async processEvent(e: Event) {
+    if (!e.id || !e.sig) throw new Error("Event doesn't have an id or sig");
     switch (e.kind) {
       case 0:
         return this.processKind0Event(e);
@@ -51,24 +57,35 @@ export default class EventProcessor {
     }
   }
 
-  processKind0Event(_e: Event) {
-    this._logger.log(
-      `EventProcessor: .processKind0Event not implemented`
-    );
+  async processKind0Event(_e: Event) {
+    this._logger.log(`EventProcessor: .processKind0Event not implemented`);
     // TODO
   }
 
-  processKind1Event(_e: Event) {
-    this._logger.log(
-      `EventProcessor: .processKind1Event not implemented`
-    );
+  async processKind1Event(_e: Event) {
+    this._logger.log(`EventProcessor: .processKind1Event not implemented`);
     // TODO
   }
 
-  processKind2Event(_e: Event) {
-    this._logger.log(
-      `EventProcessor: .processKind2Event not implemented`
-    );
+  async processKind2Event(e: Event) {
+    try {
+      this._db.client.event.create({
+        data: {
+          event_id: e.id as string,
+          event_created_at: new Date(e.created_at * 1000),
+          event_kind: e.kind,
+          event_pubkey: e.pubkey,
+          event_content: e.content,
+          event_signature: e.sig,
+          event_tags: {
+            create: e.tags.map(tag => ({ tag_name: tag })),
+          },
+        },
+      });
+    } catch (e) {
+      return;
+    }
+    this._logger.log(`EventProcessor: .processKind2Event not implemented`);
     // TODO
   }
 }

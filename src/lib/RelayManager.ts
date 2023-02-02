@@ -1,9 +1,10 @@
-import { Event, Filter, RelayInit, Sub } from '../@types/nostr-tools-shim';
+import { Event, Filter, Sub } from '../@types/nostr-tools-shim';
 import { Logger } from './Logger';
 import { Relay } from './Relay';
 import { Subscription } from './Subscription';
 import { sha1Hash } from '../utils/crypto';
 import { DbClient, DbRelay } from './DbClient';
+import EventProcessor from './EventProcessor';
 
 export class RelayManager {
   private _db: DbClient;
@@ -11,20 +12,16 @@ export class RelayManager {
   private _logger: Logger;
   // Key is the hash for the stringified subscription filters
   private _subscriptions = new Map<string, Subscription>();
-  private _relayInit: RelayInit;
+  private _eventProcessor: EventProcessor;
 
-  constructor({
-    db,
-    logger,
-    relayInit,
-  }: {
+  constructor(opts: {
     db: DbClient;
     logger: Logger;
-    relayInit: RelayInit;
+    eventProcessor: EventProcessor;
   }) {
-    this._db = db;
-    this._logger = logger;
-    this._relayInit = relayInit;
+    this._db = opts.db;
+    this._logger = opts.logger;
+    this._eventProcessor = opts.eventProcessor;
   }
 
   get subscriptions() {
@@ -55,7 +52,7 @@ export class RelayManager {
       id,
       url,
       logger: this._logger,
-      relayInit: this._relayInit,
+      eventProcessor: this._eventProcessor
     });
     relay.connect();
     this._relays.set(id, relay);
@@ -87,8 +84,8 @@ export class RelayManager {
   addSubscription({
     filters,
     closeOnEose,
-    onEvent = () => {},
-    onEose = () => {},
+    onEvent = () => { },
+    onEose = () => { },
   }: {
     filters: Filter[];
     closeOnEose: boolean;

@@ -1,5 +1,5 @@
 // This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// learn more about it in the docs https//pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -10,21 +10,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Account {
-  id          Int      @id @default(autoincrement())
-  pubkey      String   @unique
-  private_key String?  @unique
-  user        User     @relation(fields: [user_id], references: [id])
-  user_id     Int      @unique
-  added_at    DateTime @default(now())
-}
-
 model User {
-  id       Int       @id @default(autoincrement())
-  pubkey   String    @unique
-  account  Account?
-  metadata Metadata?
-  added_at DateTime  @default(now())
+  id          Int         @id @default(autoincrement())
+  pubkey      String      @unique
+  private_key String
+  metadata    Metadata?
+  is_account  Boolean     @default(false)
+  added_at    DateTime    @default(now())
+  UserRelay   UserRelay[]
 }
 
 model Metadata {
@@ -44,21 +37,59 @@ model Metadata {
 }
 
 model Relay {
-  id       Int      @id @default(autoincrement())
-  url      String   @unique
-  added_at DateTime @default(now())
+  id                       Int         @id @default(autoincrement())
+  url                      String      @unique
+  added_at                 DateTime    @default(now())
+  name                     String
+  contact                  String
+  supported_nips           String
+  software                 String
+  admin_pubkey             String
+  version                  String
+  description              String
+  last_contact_information Int
+  last_posted              Int
+  last_fetched             Int
+  last_suggested_kind2     Int
+  last_suggested_kind3     Int
+  last_suggested_nip23     Int
+  last_suggested_nip05     Int
+  last_suggested_bytag     Int
+  failed_post_attempts     Int
+  success_post_attempts    Int
+  UserRelay                UserRelay[]
+}
+
+model UserRelay {
+  id                    Int     @id @default(autoincrement())
+  relay                 Relay   @relation(fields: [relay_id], references: [id])
+  relay_id              Int
+  user                  User    @relation(fields: [user_id], references: [id])
+  user_id               Int
+  post                  Boolean
+  last_posted           Int
+  last_fetched          Int
+  failed_post_attempts  Int
+  success_post_attempts Int
+}
+
+model Tag {
+  id       Int    @id @default(autoincrement())
+  name     String
+  value    String
+  event    Event  @relation(fields: [event_id], references: [id])
+  event_id Int
 }
 
 model Event {
-  id              Int       @id @default(autoincrement())
-  metadata        Metadata?
-  event_id        String    @unique
-  event_signature String
-  event_kind      Int
-  event_pubkey    String
-  event_content   String?
-  event_tags      String?
-  // Refactor this to event_created_at?
-  event_createdAt DateTime
-  added_at        DateTime  @default(now())
+  id               Int       @id @default(autoincrement())
+  metadata         Metadata?
+  event_id         String    @unique
+  event_signature  String
+  event_kind       Int
+  event_pubkey     String
+  event_content    String?
+  event_tags       Tag[]
+  event_created_at DateTime
+  added_at         DateTime  @default(now())
 }

@@ -13,7 +13,7 @@ datasource db {
 model User {
   id          Int         @id @default(autoincrement())
   pubkey      String      @unique
-  private_key String
+  private_key String?
   metadata    Metadata?
   is_account  Boolean     @default(false)
   added_at    DateTime    @default(now())
@@ -57,7 +57,8 @@ model Relay {
   last_suggested_bytag     Int
   failed_post_attempts     Int
   success_post_attempts    Int
-  UserRelay                UserRelay[]
+  user_relay               UserRelay[]
+  events                   Event[]
 }
 
 model UserRelay {
@@ -91,5 +92,7 @@ model Event {
   event_content    String?
   event_tags       Tag[]
   event_created_at DateTime
+  from_relay       Relay?    @relation(fields: [from_relay_id], references: [id])
+  from_relay_id    Int?
   added_at         DateTime  @default(now())
 }

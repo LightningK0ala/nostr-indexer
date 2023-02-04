@@ -56,7 +56,7 @@ export class Relay {
       .then(() => {
         this._connected = true;
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 
   async disconnect() {
@@ -142,7 +142,7 @@ export class Relay {
   //   });
   // }
 
-  unsubscribe() {}
+  unsubscribe() { }
 }
 
 // run({

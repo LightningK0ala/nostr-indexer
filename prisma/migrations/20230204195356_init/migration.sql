@@ -2,7 +2,7 @@
 CREATE TABLE "User" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "pubkey" TEXT NOT NULL,
-    "private_key" TEXT NOT NULL,
+    "private_key" TEXT,
     "is_account" BOOLEAN NOT NULL DEFAULT false,
     "added_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -80,7 +80,9 @@ CREATE TABLE "Event" (
     "event_pubkey" TEXT NOT NULL,
     "event_content" TEXT,
     "event_created_at" DATETIME NOT NULL,
-    "added_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "from_relay_id" INTEGER,
+    "added_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Event_from_relay_id_fkey" FOREIGN KEY ("from_relay_id") REFERENCES "Relay" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateIndex

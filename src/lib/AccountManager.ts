@@ -78,6 +78,9 @@ export class AccountManager {
                 logger: this._logger,
                 eventProcessor: this._eventProcessor,
               });
+              // TODO: When the connection is confirmed, internally in Relay,
+              // add it to the db and set the id so we can send it to the
+              // event processor.
               await relay.connect();
               await relay.subscribeSync({
                 filters: [

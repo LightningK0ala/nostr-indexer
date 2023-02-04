@@ -68,6 +68,8 @@ export default class EventProcessor {
   }
 
   async processKind2Event(e: Event) {
+    if (!e.id) this._logger.log(`EventProcessor: Event doesn't have an id`);
+    if (!e.sig) this._logger.log(`EventProcessor: Event doesn't have a sig`);
     try {
       this._db.client.event.create({
         data: {
@@ -76,10 +78,11 @@ export default class EventProcessor {
           event_kind: e.kind,
           event_pubkey: e.pubkey,
           event_content: e.content,
-          event_signature: e.sig,
-          event_tags: {
-            create: e.tags.map(tag => ({ tag_name: tag })),
-          },
+          event_signature: e.sig as string,
+          // TODO Add relay reference
+          // event_tags: {
+          //   create: e.tags.map(tag => ({ tag_name: tag })),
+          // },
         },
       });
     } catch (e) {

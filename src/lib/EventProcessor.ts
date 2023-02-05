@@ -72,7 +72,16 @@ export default class EventProcessor {
   // TODO: Process tags
   async processContactsEvent(ej: EventJob) {
     return this._db.client.$transaction(async tx => {
+      const user = await tx.user.findFirst({ where: { pubkey: ej.event.pubkey } })
+      if (!user) {
+        this._logger.log(`EventProcessor: User not found for pubkey ${ej.event.pubkey}, skipping processing contacts`)
+        return
+      }
       if (!ej.event.id) {
+        this._logger.log(`EventProcessor: Event doesn't have an id`)
+        return
+      }
+      if (!ej.event.sig) {
         this._logger.log(`EventProcessor: Event doesn't have an id`)
         return
       }
@@ -85,29 +94,33 @@ export default class EventProcessor {
           event_kind: ej.event.kind,
           event_pubkey: ej.event.pubkey,
           event_content: ej.event.content,
-          event_signature: ej.event.sig as string,
+          event_signature: ej.event.sig,
           from_relay_url: ej.from_relay_url,
           event_tags: JSON.stringify(ej.event.tags),
         }
       })
 
-      // TODO: For each of the contacts, create a user and add it as a follower.
-
-      // Get author
-      // const author = await tx.event.findFirst({ where: { event_pubkey: ej.event.pubkey } })
-
-
-
-      // await tx.userFollowers.upsert({
-      //   where: {
-      //     user_id: 1,
-      //   }
-      //   // update: {},
-      //   // create: {
-      //   //   user_pubkey: ej.event.pubkey,
-      //   //   followers: JSON.stringify(ej.event.followers),
-      //   // }
-      // })
+      for (const tag of ej.event.tags) {
+        if (tag[0] !== "p") return
+        const pubkey = tag[1]
+        const followedUser = await tx.user.upsert({
+          where: { pubkey },
+          update: {},
+          create: {
+            pubkey,
+          }
+        })
+        await tx.userFollower.upsert({
+          where: { user_id_follower_id: { user_id: followedUser.id, follower_id: user.id } },
+          update: {},
+          create: {
+            user_id: followedUser.id,
+            follower_id: user.id,
+            ...(tag[2] ? { main_relay_url: tag[2] } : {}),
+            ...(tag[3] ? { pet_name: tag[3] } : {}),
+          }
+        })
+      }
     })
   }
 

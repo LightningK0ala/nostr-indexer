@@ -1,5 +1,6 @@
 import { relayInit } from 'nostr-tools';
 import { Event, Filter, NostrRelay, Sub } from '../@types/nostr-tools-shim';
+import { DbClient } from './DbClient';
 import EventProcessor from './EventProcessor';
 import { Logger } from './Logger';
 
@@ -49,6 +50,20 @@ export class Relay {
     return this._connected;
   }
 
+  static async create(opts: {
+    url: string;
+    db: DbClient;
+    logger: Logger;
+    eventProcessor: EventProcessor;
+  }) {
+    const { id } = await opts.db.client.relay.upsert({
+      where: { url: opts.url },
+      update: {},
+      create: { url: opts.url },
+    })
+    return new Relay({ ...opts, id });
+  }
+
   // Methods
   async connect() {
     return this._relay
@@ -77,17 +92,11 @@ export class Relay {
   }
 
   async subscribe(opts: { filters: Filter[]; onEose?: (sub: Sub) => void }) {
-    this._logger.log('Relay: Subscribing');
     const sub = this._relay.sub(opts.filters);
     sub.on('event', (e: Event) => {
-      this._logger.log("Relay: Received event", e.id)
-      return this._eventProcessor.addEvent(e)
+      return this._eventProcessor.addEvent({ event: e, from_relay_url: this._url })
     });
-    opts.onEose &&
-      sub.on('eose', () => {
-        this._logger.log('Relay: eose');
-        opts.onEose && opts.onEose(sub);
-      });
+    opts.onEose && sub.on('eose', () => opts.onEose && opts.onEose(sub));
     return sub;
   }
 

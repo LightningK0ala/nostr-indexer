@@ -84,22 +84,25 @@ export class AccountManager {
         url =>
           new Promise(async (resolve, reject) => {
             try {
-              const relay = new Relay({
+              // TODO: Wait until connected to create the relay?
+              // or include last_connected + last_connected_attempt fields in the db
+              // so we can track if it's a relay we've never connected to or a dud.
+              const relay = await Relay.create({
                 url,
+                db: this._db,
                 logger: this._logger,
                 eventProcessor: this._eventProcessor,
               });
-              // TODO: When the connection is confirmed, internally in Relay,
-              // add it to the db and set the id so we can send it to the
-              // event processor.
               await relay.connect();
               await relay.subscribeSync({
                 filters: [
-                  // One-time get events where only the latest matters
+                  // Collect as much information as possible about the account
+                  // from kinds that only require 1 event.
                   {
                     kinds: [
                       Kind.RecommendRelay,
-                      Kind.Metadata
+                      Kind.Metadata,
+                      Kind.Contacts,
                     ], authors: [pubkey], limit: 1
                   },
                 ],

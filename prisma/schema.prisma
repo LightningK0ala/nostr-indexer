@@ -11,13 +11,15 @@ datasource db {
 }
 
 model User {
-  id          Int         @id @default(autoincrement())
-  pubkey      String      @unique
+  id          Int            @id @default(autoincrement())
+  pubkey      String         @unique
   private_key String?
   metadata    Metadata?
-  is_account  Boolean     @default(false)
-  added_at    DateTime    @default(now())
-  UserRelay   UserRelay[]
+  is_account  Boolean        @default(false)
+  added_at    DateTime       @default(now())
+  relays      UserRelay[]
+  followers   UserFollower[] @relation("Followers")
+  follows     UserFollower[] @relation("Follows")
 }
 
 model Metadata {
@@ -40,24 +42,24 @@ model Relay {
   id                       Int         @id @default(autoincrement())
   url                      String      @unique
   added_at                 DateTime    @default(now())
-  name                     String
-  contact                  String
-  supported_nips           String
-  software                 String
-  admin_pubkey             String
-  version                  String
-  description              String
-  last_contact_information Int
-  last_posted              Int
-  last_fetched             Int
-  last_suggested_kind2     Int
-  last_suggested_kind3     Int
-  last_suggested_nip23     Int
-  last_suggested_nip05     Int
-  last_suggested_bytag     Int
-  failed_post_attempts     Int
-  success_post_attempts    Int
-  user_relay               UserRelay[]
+  name                     String?
+  contact                  String?
+  supported_nips           String?
+  software                 String?
+  admin_pubkey             String?
+  version                  String?
+  description              String?
+  last_contact_information Int?
+  last_posted              Int?
+  last_fetched             Int?
+  last_suggested_kind2     Int?
+  last_suggested_kind3     Int?
+  last_suggested_nip23     Int?
+  last_suggested_nip05     Int?
+  last_suggested_bytag     Int?
+  failed_post_attempts     Int?
+  success_post_attempts    Int?
+  users                    UserRelay[]
   events                   Event[]
 }
 
@@ -72,14 +74,20 @@ model UserRelay {
   last_fetched          Int
   failed_post_attempts  Int
   success_post_attempts Int
+
+  @@unique([user_id, relay_id])
 }
 
-model Tag {
-  id       Int    @id @default(autoincrement())
-  name     String
-  value    String
-  event    Event  @relation(fields: [event_id], references: [id])
-  event_id Int
+model UserFollower {
+  id             Int     @id @default(autoincrement())
+  user           User    @relation("Followers", fields: [user_id], references: [id])
+  user_id        Int
+  follower       User    @relation("Follows", fields: [follower_id], references: [id])
+  follower_id    Int
+  main_relay_url String?
+  pet_name       String?
+
+  @@unique([user_id, follower_id])
 }
 
 model Event {
@@ -90,9 +98,9 @@ model Event {
   event_kind       Int
   event_pubkey     String
   event_content    String?
-  event_tags       Tag[]
+  event_tags       String?
   event_created_at DateTime
-  from_relay       Relay?    @relation(fields: [from_relay_id], references: [id])
-  from_relay_id    Int?
+  from_relay       Relay?    @relation(fields: [from_relay_url], references: [url])
+  from_relay_url   String?
   added_at         DateTime  @default(now())
 }

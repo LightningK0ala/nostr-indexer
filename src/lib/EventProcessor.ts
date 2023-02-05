@@ -4,10 +4,15 @@ import { DbClient } from './DbClient';
 import { Logger } from './Logger';
 import { Kind } from './NostrEvents';
 
+type EventJob = {
+  from_relay_url: string;
+  event: Event
+}
+
 export default class EventProcessor {
   private _db: DbClient;
   private _logger: Logger;
-  private _eventQueue: Event[] = [];
+  private _eventQueue: EventJob[] = [];
 
   constructor(opts: { db: DbClient; logger: Logger }) {
     this._db = opts.db;
@@ -23,45 +28,91 @@ export default class EventProcessor {
     return this._eventQueue;
   }
 
-  addEvent(e: Event): Boolean {
+  addEvent({ event, from_relay_url }: EventJob): Boolean {
     // Skip if event is already in queue
-    if (this._eventQueue.filter(ev => ev.id === e.id).length > 0) return false;
-    this._eventQueue.push(e);
-    this._logger.log(`EventProcessor: Added event ${e.id} to queue`);
+    if (this._eventQueue.filter(ev => ev.event.id === event.id).length > 0) return false;
+    this._eventQueue.push({ event, from_relay_url });
     // Trigger processing events loop if this is the first event in queue
     if (this._eventQueue.length == 1) this.processEvents();
     return true;
   }
 
-  async processEvents(): Promise<boolean> {
+  async processEvents(): Promise<true> {
     // Skip if event queue is empty
-    if (this._eventQueue.length == 0) return false;
-    const [event, ...remaining] = this._eventQueue;
-    // TODO: Move this until after we've processed the event
-    await this.processEvent(event);
+    if (this._eventQueue.length == 0) return true;
+    const [eventJob, ...remaining] = this._eventQueue;
+    await this.processEvent(eventJob);
     this._eventQueue = remaining;
-    return true;
+    return this.processEvents();
   }
 
-  async processEvent(e: Event) {
-    if (!e.id || !e.sig) throw new Error("Event doesn't have an id or sig");
-    switch (e.kind) {
+  async processEvent(ej: EventJob) {
+    if (!ej.event.id || !ej.event.sig) throw new Error("Event doesn't have an id or sig");
+    switch (ej.event.kind) {
       case Kind.Metadata:
-        return this.processKind0Event(e);
+        return this.processMetadataEvent(ej);
       case Kind.Text:
-        return this.processKind1Event(e);
+        return this.processTextEvent(ej);
       case Kind.RecommendRelay:
-        return this.processKind2Event(e);
+        return this.processRecommendedRelayEvent(ej);
+      case Kind.Contacts:
+        return this.processContactsEvent(ej);
       default:
         this._logger.log(
-          `EventProcessor: Event kind ${e.kind} processing not implemented`
+          `EventProcessor: Event kind ${ej.event.kind} processing not implemented`
         );
         return;
     }
   }
 
-  async processKind0Event(e: Event) {
-    const metadata = pick(JSON.parse(e.content), [
+  async processTextEvent(_args: EventJob) {
+    this._logger.log(`EventProcessor: .processTextEvent not implemented`);
+  }
+
+  // TODO: Process tags
+  async processContactsEvent(ej: EventJob) {
+    return this._db.client.$transaction(async tx => {
+      if (!ej.event.id) {
+        this._logger.log(`EventProcessor: Event doesn't have an id`)
+        return
+      }
+      await tx.event.upsert({
+        where: { event_id: ej.event.id },
+        update: {},
+        create: {
+          event_id: ej.event.id,
+          event_created_at: new Date(ej.event.created_at * 1000),
+          event_kind: ej.event.kind,
+          event_pubkey: ej.event.pubkey,
+          event_content: ej.event.content,
+          event_signature: ej.event.sig as string,
+          from_relay_url: ej.from_relay_url,
+          event_tags: JSON.stringify(ej.event.tags),
+        }
+      })
+
+      // TODO: For each of the contacts, create a user and add it as a follower.
+
+      // Get author
+      // const author = await tx.event.findFirst({ where: { event_pubkey: ej.event.pubkey } })
+
+
+
+      // await tx.userFollowers.upsert({
+      //   where: {
+      //     user_id: 1,
+      //   }
+      //   // update: {},
+      //   // create: {
+      //   //   user_pubkey: ej.event.pubkey,
+      //   //   followers: JSON.stringify(ej.event.followers),
+      //   // }
+      // })
+    })
+  }
+
+  async processMetadataEvent(ej: EventJob) {
+    const metadata = pick(JSON.parse(ej.event.content), [
       'lud16',
       'website',
       'nip05',
@@ -71,26 +122,28 @@ export default class EventProcessor {
       'about',
       'name',
     ])
-    await this._db.client.$transaction(async tx => {
-      const user = await tx.user.findFirst({ where: { pubkey: e.pubkey } })
+    return this._db.client.$transaction(async tx => {
+      const user = await tx.user.findFirst({ where: { pubkey: ej.event.pubkey } })
       if (!user) {
-        this._logger.log(`EventProcessor: User not found for pubkey ${e.pubkey}, skipping event creation`)
+        this._logger.log(`EventProcessor: User not found for pubkey ${ej.event.pubkey}, skipping event creation`)
         return
       }
-      if (!e.id) {
+      if (!ej.event.id) {
         this._logger.log(`EventProcessor: Event doesn't have an id`)
         return
       }
+      // TODO: Include tags
       const dbEvent = await tx.event.upsert({
-        where: { event_id: e.id },
+        where: { event_id: ej.event.id },
         update: {},
         create: {
-          event_id: e.id,
-          event_created_at: new Date(e.created_at * 1000),
-          event_kind: e.kind,
-          event_pubkey: e.pubkey,
-          event_content: e.content,
-          event_signature: e.sig as string,
+          event_id: ej.event.id,
+          event_created_at: new Date(ej.event.created_at * 1000),
+          event_kind: ej.event.kind,
+          event_pubkey: ej.event.pubkey,
+          event_content: ej.event.content,
+          event_signature: ej.event.sig as string,
+          from_relay_url: ej.from_relay_url,
         }
       })
       await tx.metadata.upsert({
@@ -106,34 +159,23 @@ export default class EventProcessor {
     })
   }
 
-
-  async processKind1Event(_e: Event) {
-    this._logger.log(`EventProcessor: .processKind1Event not implemented`);
-    // TODO
-  }
-
-  async processKind2Event(e: Event) {
-    if (!e.id) this._logger.log(`EventProcessor: Event doesn't have an id`);
-    if (!e.sig) this._logger.log(`EventProcessor: Event doesn't have a sig`);
-    try {
-      this._db.client.event.create({
-        data: {
-          event_id: e.id as string,
-          event_created_at: new Date(e.created_at * 1000),
-          event_kind: e.kind,
-          event_pubkey: e.pubkey,
-          event_content: e.content,
-          event_signature: e.sig as string,
-          // TODO Add relay reference
-          // event_tags: {
-          //   create: e.tags.map(tag => ({ tag_name: tag })),
-          // },
-        },
-      });
-    } catch (e) {
-      return;
-    }
-    this._logger.log(`EventProcessor: .processKind2Event not implemented`);
-    // TODO
+  async processRecommendedRelayEvent(ej: EventJob) {
+    if (!ej.event.id) this._logger.log(`EventProcessor: Event doesn't have an id`);
+    if (!ej.event.sig) this._logger.log(`EventProcessor: Event doesn't have a sig`);
+    return this._db.client.event.create({
+      data: {
+        event_id: ej.event.id as string,
+        event_created_at: new Date(ej.event.created_at * 1000),
+        event_kind: ej.event.kind,
+        event_pubkey: ej.event.pubkey,
+        event_content: ej.event.content,
+        event_signature: ej.event.sig as string,
+        from_relay_url: ej.from_relay_url
+        // TODO Add relay reference
+        // event_tags: {
+        //   create: e.tags.map(tag => ({ tag_name: tag })),
+        // },
+      },
+    });
   }
 }

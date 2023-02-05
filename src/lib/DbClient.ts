@@ -17,7 +17,7 @@ export class DbClient {
   constructor({ logger, dbPath }: { logger: Logger; dbPath: string }) {
     this._logger = logger;
     this._db = new PrismaClient({
-      datasources: { db: { url: `file:${dbPath}` } },
+      datasources: { db: { url: `file:${dbPath}?socket_timeout=30&&connection_limit=1` } },
     });
   }
 

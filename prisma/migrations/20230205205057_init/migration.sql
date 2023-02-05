@@ -12,6 +12,7 @@ CREATE TABLE "Metadata" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "user_id" INTEGER NOT NULL,
     "event_id" INTEGER NOT NULL,
+    "lud06" TEXT,
     "lud16" TEXT,
     "website" TEXT,
     "nip05" TEXT,
@@ -102,6 +103,9 @@ CREATE UNIQUE INDEX "Relay_url_key" ON "Relay"("url");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserRelay_user_id_relay_id_key" ON "UserRelay"("user_id", "relay_id");
+
+-- CreateIndex
+CREATE INDEX "UserFollower_follower_id_idx" ON "UserFollower"("follower_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserFollower_user_id_follower_id_key" ON "UserFollower"("user_id", "follower_id");

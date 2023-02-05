@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { RelayManager } from './RelayManager';
+import { Account } from './Account';
 import { Config } from './Config';
 import { Logger } from './Logger';
 import { AccountManager } from './AccountManager';
@@ -88,5 +89,28 @@ export class Indexer {
     // await this._db.$disconnect();
     // TODO: Stop relay manager
     return true;
+  }
+
+  async findUser({ pubkey }: { pubkey: string }) {
+    pubkey = Account.convertPubkeyToHex(pubkey)
+    return this._db.client.user.findUnique({ where: { pubkey } })
+  }
+
+  async findFollowers({ id }: { id: number }) {
+    const userFollowers = await this._db.client.userFollower.findMany({ where: { user_id: id }, include: { follower: true } })
+    return userFollowers.map((uf: any) => uf.follower)
+  }
+
+  async findFollows({ id }: { id: number }) {
+    const userFollowers = await this._db.client.userFollower.findMany({ where: { follower_id: id }, include: { user: true } })
+    return userFollowers.map((uf: any) => uf.user)
+  }
+
+  async followersCount({ id }: { id: number }) {
+    return this._db.client.userFollower.count({ where: { user_id: id } })
+  }
+
+  async followsCount({ id }: { id: number }) {
+    return this._db.client.userFollower.count({ where: { follower_id: id } })
   }
 }

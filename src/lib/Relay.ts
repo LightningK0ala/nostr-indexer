@@ -85,6 +85,7 @@ export class Relay {
       this.subscribe({
         ...opts,
         onEose: (sub: Sub) => {
+          sub.unsub()
           resolve(sub);
         },
       });
@@ -93,9 +94,7 @@ export class Relay {
 
   async subscribe(opts: { filters: Filter[]; onEose?: (sub: Sub) => void }) {
     const sub = this._relay.sub(opts.filters);
-    sub.on('event', (e: Event) => {
-      return this._eventProcessor.addEvent({ event: e, from_relay_url: this._url })
-    });
+    sub.on('event', (e: Event) => this._eventProcessor.addEvent({ event: e, from_relay_url: this._url }))
     opts.onEose && sub.on('eose', () => opts.onEose && opts.onEose(sub));
     return sub;
   }

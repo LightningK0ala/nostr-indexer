@@ -94,17 +94,21 @@ export class AccountManager {
                 eventProcessor: this._eventProcessor,
               });
               await relay.connect();
+              // Collect as much information as possible about the account
+              // from event kinds that only require 1 event.
               await relay.subscribeSync({
                 filters: [
-                  // Collect as much information as possible about the account
-                  // from kinds that only require 1 event.
-                  {
-                    kinds: [
-                      Kind.RecommendRelay,
-                      Kind.Metadata,
-                      Kind.Contacts,
-                    ], authors: [pubkey], limit: 1
-                  },
+                  { kinds: [Kind.RecommendRelay], authors: [pubkey], limit: 1 },
+                ],
+              });
+              await relay.subscribeSync({
+                filters: [
+                  { kinds: [Kind.Metadata], authors: [pubkey], limit: 1 },
+                ],
+              });
+              await relay.subscribeSync({
+                filters: [
+                  { kinds: [Kind.Contacts], authors: [pubkey], limit: 1 },
                 ],
               });
               await relay.disconnect();

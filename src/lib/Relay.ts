@@ -65,7 +65,6 @@ export class Relay {
 
   async subscribeSync(opts: {
     filters: Filter[];
-    onEose?: (sub: Sub) => void;
   }): Promise<Sub> {
     return new Promise(resolve => {
       this.subscribe({
@@ -78,10 +77,15 @@ export class Relay {
   }
 
   async subscribe(opts: { filters: Filter[]; onEose?: (sub: Sub) => void }) {
+    this._logger.log('Relay: Subscribing');
     const sub = this._relay.sub(opts.filters);
-    sub.on('event', (e: Event) => this._eventProcessor.addEvent(e));
+    sub.on('event', (e: Event) => {
+      this._logger.log("Relay: Received event", e.id)
+      return this._eventProcessor.addEvent(e)
+    });
     opts.onEose &&
       sub.on('eose', () => {
+        this._logger.log('Relay: eose');
         opts.onEose && opts.onEose(sub);
       });
     return sub;

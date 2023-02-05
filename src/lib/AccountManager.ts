@@ -4,6 +4,7 @@ import { RelayManager } from './RelayManager';
 import { DbClient } from './DbClient';
 import { Relay } from './Relay';
 import EventProcessor from './EventProcessor';
+import { Kind } from './NostrEvents';
 
 export class AccountManager {
   private _db: DbClient;
@@ -68,6 +69,16 @@ export class AccountManager {
   }) {
     if (opts.privateKey) throw new Error('Not currently supported');
     const pubkey = Account.convertPubkeyToHex(opts.pubkey);
+    // Upsert user
+    await this._db.client.user.upsert({
+      where: { pubkey },
+      update: {},
+      create: {
+        pubkey,
+        is_account: true,
+        ...(opts.privateKey ? { private_key: opts.privateKey } : {})
+      },
+    })
     Promise.all(
       opts.relays.map(
         url =>
@@ -84,8 +95,13 @@ export class AccountManager {
               await relay.connect();
               await relay.subscribeSync({
                 filters: [
-                  // Get recommended relays
-                  { kinds: [2], authors: [pubkey], limit: 1 },
+                  // One-time get events where only the latest matters
+                  {
+                    kinds: [
+                      Kind.RecommendRelay,
+                      Kind.Metadata
+                    ], authors: [pubkey], limit: 1
+                  },
                 ],
               });
               await relay.disconnect();

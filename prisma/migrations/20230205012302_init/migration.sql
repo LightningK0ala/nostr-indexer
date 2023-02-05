@@ -12,7 +12,7 @@ CREATE TABLE "Metadata" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "user_id" INTEGER NOT NULL,
     "event_id" INTEGER NOT NULL,
-    "lud06" TEXT,
+    "lud16" TEXT,
     "website" TEXT,
     "nip05" TEXT,
     "picture" TEXT,

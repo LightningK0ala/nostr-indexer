@@ -55,7 +55,7 @@ export class Kind0Event extends NostrEvent {
   get parsedContent() {
     try {
       return pick(JSON.parse(this.content), [
-        'lud06',
+        'lud16',
         'website',
         'nip05',
         'picture',

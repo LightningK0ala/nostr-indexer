@@ -26,7 +26,7 @@ model Metadata {
   user_id      Int     @unique
   event        Event   @relation(fields: [event_id], references: [id])
   event_id     Int     @unique
-  lud06        String?
+  lud16        String?
   website      String?
   nip05        String?
   picture      String?

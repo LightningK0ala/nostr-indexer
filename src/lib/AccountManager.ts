@@ -1,4 +1,4 @@
-import { Logger } from './Logger';
+import { Logger, LogType } from './Logger';
 import { Account } from './Account';
 import { RelayManager } from './RelayManager';
 import { DbClient } from './DbClient';
@@ -22,6 +22,7 @@ export class AccountManager {
     eventProcessor: EventProcessor;
   }) {
     this._db = opts.db;
+    opts.logger.type = LogType.ACCOUNT_MANAGER;
     this._logger = opts.logger;
     this._relayManager = opts.relayManager;
     this._eventProcessor = opts.eventProcessor;
@@ -108,11 +109,11 @@ export class AccountManager {
             const relay = await Relay.create({
               url,
               db: this._db,
-              logger: this._logger,
+              logger: new Logger({ config: this._logger.config }),
               eventProcessor: this._eventProcessor,
               onDisconnect: () => {
                 if (complete) resolve(relay)
-                reject(new Error(`Relay disconnected without returning data ${url}`))
+                reject(new Error(`❌ Relay disconnected without returning data ${url}`))
               },
               onError: (e: any) => { reject(e) }
             });
@@ -164,22 +165,22 @@ export class AccountManager {
             });
             clearTimeout(timeout)
             complete = true
-            this._logger.log(`Finished collecting account info from relay ${url}`)
+            this._logger.log(`✔️  Finished collecting account info from relay ${url}`)
             await relay.disconnect();
             resolve(relay);
           })
       )
     )
-      .then(relays => {
+      .then(() => {
         // Wait until the EventProcessor events queue is empty
         while (true) {
           if (this._eventProcessor.eventQueue.length === 0) break;
         }
         // TODO: Start indexing the account.
-        this._logger.log('TODO: Index added account', relays);
+        this._logger.log('👤 Added account');
       })
       .catch(e => {
-        throw new Error(`Failed to add account: ${e}`);
+        throw new Error(`❌ Failed to add account: ${e}`);
       });
     // 1. Fetch kind 1
     // 2.

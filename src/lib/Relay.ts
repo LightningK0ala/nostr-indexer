@@ -2,7 +2,7 @@ import { relayInit } from 'nostr-tools';
 import { Event, Filter, NostrRelay, Sub } from '../@types/nostr-tools-shim';
 import { DbClient } from './DbClient';
 import EventProcessor from './EventProcessor';
-import { Logger } from './Logger';
+import { Logger, LogType } from './Logger';
 
 type RelayCreateOpts = {
   url: string;
@@ -26,11 +26,12 @@ export class Relay {
   } & RelayCreateOpts) {
     this._id = opts.id;
     this._url = opts.url;
+    opts.logger.type = LogType.RELAY;
     this._logger = opts.logger;
     this._eventProcessor = opts.eventProcessor;
     this._relay = relayInit(this._url);
     this._relay.on('connect', () => {
-      this._logger.log(`Connected to relay ${this._url}`);
+      this._logger.log(`🔌 ✅ Connected to relay ${this._url}`);
       this._connected = true;
     });
 
@@ -42,7 +43,7 @@ export class Relay {
     });
 
     this._relay.on('disconnect', () => {
-      this._logger.log(`Disconnected from relay ${this._url}`);
+      this._logger.log(`🔌 ❌ Disconnected from relay ${this._url}`);
       this._connected = false;
       if (opts.onDisconnect) opts.onDisconnect()
     });

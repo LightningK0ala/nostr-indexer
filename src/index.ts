@@ -10,14 +10,17 @@ import EventProcessor from './lib/EventProcessor';
 Object.assign(global, { WebSocket: require('ws') });
 
 export const createIndexer = (cfg: Config) => {
+
   const config = new Config(cfg);
-  const logger = new Logger({ config });
-  const db = new DbClient({ dbPath: cfg.dbPath, logger });
-  const eventProcessor = new EventProcessor({ db, logger });
-  const relayManager = new RelayManager({ db, logger, eventProcessor });
+  const newLogger = function () {
+    return new Logger({ config: cfg });
+  }
+  const db = new DbClient({ dbPath: cfg.dbPath, logger: newLogger() });
+  const eventProcessor = new EventProcessor({ db, logger: newLogger() })
+  const relayManager = new RelayManager({ db, eventProcessor, logger: newLogger() })
   const accountManager = new AccountManager({
     db,
-    logger,
+    logger: newLogger(),
     relayManager,
     eventProcessor,
   });
@@ -27,7 +30,7 @@ export const createIndexer = (cfg: Config) => {
     config,
     relayManager,
     accountManager,
-    logger,
+    logger: newLogger(),
   });
 };
 

@@ -2,7 +2,7 @@ import fs from 'fs';
 import { RelayManager } from './RelayManager';
 import { Account } from './Account';
 import { Config } from './Config';
-import { Logger } from './Logger';
+import { Logger, LogType } from './Logger';
 import { AccountManager } from './AccountManager';
 import { DbClient } from './DbClient';
 
@@ -32,6 +32,7 @@ export class Indexer {
     this._config = config;
     this._relayManager = relayManager;
     this._accountManager = accountManager;
+    logger.type = LogType.INDEXER;
     this._logger = logger;
   }
 
@@ -65,6 +66,7 @@ export class Indexer {
   }
 
   async addAccount(opts: { pubkey: string; relays: string[] }) {
+    this._logger.log("Adding account")
     return this.accountManager.addAccount(opts);
   }
 

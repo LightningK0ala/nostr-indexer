@@ -2,7 +2,7 @@ import pick from 'just-pick';
 import { Event } from '../@types/nostr-tools-shim';
 import { dateToSeconds } from '../utils';
 import { DbClient } from './DbClient';
-import { Logger } from './Logger';
+import { Logger, LogType } from './Logger';
 import { Kind } from './NostrEvents';
 
 type EventJob = {
@@ -17,6 +17,7 @@ export default class EventProcessor {
 
   constructor(opts: { db: DbClient; logger: Logger }) {
     this._db = opts.db;
+    opts.logger.type = LogType.EVENT_PROCESSOR;
     this._logger = opts.logger;
   }
 
@@ -60,30 +61,30 @@ export default class EventProcessor {
         return this.processContactsEvent(ej);
       default:
         this._logger.log(
-          `EventProcessor: Event kind ${ej.event.kind} processing not implemented`
+          `Event kind ${ej.event.kind} processing not implemented`
         );
         return;
     }
   }
 
   async processTextEvent(_args: EventJob) {
-    this._logger.log(`EventProcessor: .processTextEvent not implemented`);
+    this._logger.log(`.processTextEvent not implemented`);
   }
 
   async processContactsEvent(ej: EventJob) {
-    this._logger.log(`EventProcessor: Processing contact event from ${ej.from_relay_url}`);
+    this._logger.log(`Processing contact event from ${ej.from_relay_url}`);
     return this._db.client.$transaction(async tx => {
       const user = await tx.user.findFirst({ where: { pubkey: ej.event.pubkey } })
       if (!user) {
-        this._logger.log(`EventProcessor: User not found for pubkey ${ej.event.pubkey}, skipping processing contacts`)
+        this._logger.log(`User not found for pubkey ${ej.event.pubkey}, skipping processing contacts`)
         return
       }
       if (!ej.event.id) {
-        this._logger.log(`EventProcessor: Event doesn't have an id`)
+        this._logger.log(`Event doesn't have an id`)
         return
       }
       if (!ej.event.sig) {
-        this._logger.log(`EventProcessor: Event doesn't have an id`)
+        this._logger.log(`Event doesn't have an id`)
         return
       }
       const existingEvent = await tx.event.findFirst({
@@ -141,7 +142,7 @@ export default class EventProcessor {
   }
 
   async processMetadataEvent(ej: EventJob) {
-    this._logger.log(`EventProcessor: Processing metadata event from ${ej.from_relay_url}`);
+    this._logger.log(`Processing metadata event from ${ej.from_relay_url}`);
     const metadata = pick(JSON.parse(ej.event.content), [
       'lud16',
       'lud06',
@@ -156,11 +157,11 @@ export default class EventProcessor {
     return this._db.client.$transaction(async tx => {
       const user = await tx.user.findFirst({ where: { pubkey: ej.event.pubkey } })
       if (!user) {
-        this._logger.log(`EventProcessor: User not found for pubkey ${ej.event.pubkey}, skipping event creation`)
+        this._logger.log(`User not found for pubkey ${ej.event.pubkey}, skipping event creation`)
         return
       }
       if (!ej.event.id) {
-        this._logger.log(`EventProcessor: Event doesn't have an id`)
+        this._logger.log(`Event doesn't have an id`)
         return
       }
       const existingEvent = await tx.event.findFirst({
@@ -202,9 +203,9 @@ export default class EventProcessor {
   }
 
   async processRecommendedRelayEvent(ej: EventJob) {
-    this._logger.log(`EventProcessor: Processing recommended relay event from ${ej.from_relay_url}`);
-    if (!ej.event.id) this._logger.log(`EventProcessor: Event doesn't have an id`);
-    if (!ej.event.sig) this._logger.log(`EventProcessor: Event doesn't have a sig`);
+    this._logger.log(`Processing recommended relay event from ${ej.from_relay_url}`);
+    if (!ej.event.id) this._logger.log(`Event doesn't have an id`);
+    if (!ej.event.sig) this._logger.log(`Event doesn't have a sig`);
 
     return this._db.client.$transaction(async tx => {
       const existingRecommendedRelayEvent = await tx.event.findFirst({

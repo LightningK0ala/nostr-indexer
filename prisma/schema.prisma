@@ -65,16 +65,17 @@ model Relay {
 }
 
 model UserRelay {
-  id                    Int     @id @default(autoincrement())
-  relay                 Relay   @relation(fields: [relay_id], references: [id])
+  id                    Int       @id @default(autoincrement())
+  relay                 Relay     @relation(fields: [relay_id], references: [id])
   relay_id              Int
-  user                  User    @relation(fields: [user_id], references: [id])
+  user                  User      @relation(fields: [user_id], references: [id])
   user_id               Int
-  post                  Boolean
-  last_posted           Int
-  last_fetched          Int
-  failed_post_attempts  Int
-  success_post_attempts Int
+  post                  Boolean?
+  last_posted           DateTime?
+  last_received         DateTime?
+  failed_post_attempts  Int?
+  success_post_attempts Int?
+  source                String
 
   @@unique([user_id, relay_id])
 }

@@ -51,6 +51,7 @@ export class RelayManager {
     const relay = new Relay({
       id,
       url,
+      db: this._db,
       logger: this._logger,
       eventProcessor: this._eventProcessor
     });

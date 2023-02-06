@@ -54,11 +54,12 @@ CREATE TABLE "UserRelay" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "relay_id" INTEGER NOT NULL,
     "user_id" INTEGER NOT NULL,
-    "post" BOOLEAN NOT NULL,
-    "last_posted" INTEGER NOT NULL,
-    "last_fetched" INTEGER NOT NULL,
-    "failed_post_attempts" INTEGER NOT NULL,
-    "success_post_attempts" INTEGER NOT NULL,
+    "post" BOOLEAN,
+    "last_posted" DATETIME,
+    "last_received" DATETIME,
+    "failed_post_attempts" INTEGER,
+    "success_post_attempts" INTEGER,
+    "source" TEXT NOT NULL,
     CONSTRAINT "UserRelay_relay_id_fkey" FOREIGN KEY ("relay_id") REFERENCES "Relay" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "UserRelay_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );

@@ -4,8 +4,17 @@ import { DbClient } from './DbClient';
 import EventProcessor from './EventProcessor';
 import { Logger } from './Logger';
 
+type RelayCreateOpts = {
+  url: string;
+  db: DbClient;
+  logger: Logger;
+  eventProcessor: EventProcessor;
+  onDisconnect?: () => void;
+  onError?: (e: any) => void;
+}
+
 export class Relay {
-  private _id?: number;
+  private _id: number;
   private _url: string;
   private _connected: boolean = false;
   private _relay: NostrRelay;
@@ -13,11 +22,8 @@ export class Relay {
   private _eventProcessor: EventProcessor;
 
   constructor(opts: {
-    id?: number;
-    url: string;
-    logger: Logger;
-    eventProcessor: EventProcessor;
-  }) {
+    id: number;
+  } & RelayCreateOpts) {
     this._id = opts.id;
     this._url = opts.url;
     this._logger = opts.logger;
@@ -28,14 +34,17 @@ export class Relay {
       this._connected = true;
     });
 
-    this._relay.on('error', (e: any) => {
-      this._logger.log(`Failed to connect to relay ${this._url}`, e);
+    this._relay.on('error', () => {
+      const errMsg = `Failed to connect to relay ${this._url}`
+      this._logger.log(errMsg);
       this._connected = false;
+      if (opts.onError) opts.onError(new Error(errMsg))
     });
 
     this._relay.on('disconnect', () => {
       this._logger.log(`Disconnected from relay ${this._url}`);
       this._connected = false;
+      if (opts.onDisconnect) opts.onDisconnect()
     });
   }
 
@@ -50,28 +59,18 @@ export class Relay {
     return this._connected;
   }
 
-  static async create(opts: {
-    url: string;
-    db: DbClient;
-    logger: Logger;
-    eventProcessor: EventProcessor;
-  }) {
-    const { id } = await opts.db.client.relay.upsert({
-      where: { url: opts.url },
-      update: {},
-      create: { url: opts.url },
+  static async create(opts: RelayCreateOpts) {
+    // NOTE: Using upsert here causes timeout crashes on db engine
+    let relay = await opts.db.client.relay.findUnique({ where: { url: opts.url } });
+    if (relay) return new Relay({ ...opts, id: relay.id });
+    const { id } = await opts.db.client.relay.create({
+      data: { url: opts.url }
     })
     return new Relay({ ...opts, id });
   }
 
-  // Methods
   async connect() {
-    return this._relay
-      .connect()
-      .then(() => {
-        this._connected = true;
-      })
-      .catch(() => { });
+    return this._relay.connect()
   }
 
   async disconnect() {
@@ -80,10 +79,12 @@ export class Relay {
 
   async subscribeSync(opts: {
     filters: Filter[];
+    onEvent?: (e: Event) => void;
   }): Promise<Sub> {
     return new Promise(resolve => {
       this.subscribe({
         ...opts,
+        onEvent: opts.onEvent,
         onEose: (sub: Sub) => {
           sub.unsub()
           resolve(sub);
@@ -92,10 +93,15 @@ export class Relay {
     });
   }
 
-  async subscribe(opts: { filters: Filter[]; onEose?: (sub: Sub) => void }) {
+  async subscribe(opts: { filters: Filter[]; onEvent?: (e: Event) => void, onEose?: (sub: Sub) => void }) {
     const sub = this._relay.sub(opts.filters);
-    sub.on('event', (e: Event) => this._eventProcessor.addEvent({ event: e, from_relay_url: this._url }))
-    opts.onEose && sub.on('eose', () => opts.onEose && opts.onEose(sub));
+    sub.on('event', (e: Event) => {
+      if (opts.onEvent) opts.onEvent(e)
+      this._eventProcessor.addEvent({ event: e, from_relay_url: this._url })
+    })
+    sub.on('eose', () => {
+      if (opts.onEose) opts.onEose(sub)
+    });
     return sub;
   }
 

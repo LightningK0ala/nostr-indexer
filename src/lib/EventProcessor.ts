@@ -71,7 +71,7 @@ export default class EventProcessor {
   }
 
   async processContactsEvent(ej: EventJob) {
-    this._logger.log(`EventProcessor: Processing contact event`);
+    this._logger.log(`EventProcessor: Processing contact event from ${ej.from_relay_url}`);
     return this._db.client.$transaction(async tx => {
       const user = await tx.user.findFirst({ where: { pubkey: ej.event.pubkey } })
       if (!user) {
@@ -141,7 +141,7 @@ export default class EventProcessor {
   }
 
   async processMetadataEvent(ej: EventJob) {
-    this._logger.log(`EventProcessor: Processing metadata event`);
+    this._logger.log(`EventProcessor: Processing metadata event from ${ej.from_relay_url}`);
     const metadata = pick(JSON.parse(ej.event.content), [
       'lud16',
       'lud06',
@@ -176,8 +176,8 @@ export default class EventProcessor {
       }
       if (existingEvent) {
         // Otherwise delete the old one and the user's metadata record
-        await tx.event.delete({ where: { event_id: existingEvent?.event_id } })
         await tx.metadata.deleteMany({ where: { user_id: user.id } })
+        await tx.event.delete({ where: { event_id: existingEvent?.event_id } })
       }
 
       const dbEvent = await tx.event.create({
@@ -202,7 +202,7 @@ export default class EventProcessor {
   }
 
   async processRecommendedRelayEvent(ej: EventJob) {
-    this._logger.log(`EventProcessor: Processing recommended relay event`);
+    this._logger.log(`EventProcessor: Processing recommended relay event from ${ej.from_relay_url}`);
     if (!ej.event.id) this._logger.log(`EventProcessor: Event doesn't have an id`);
     if (!ej.event.sig) this._logger.log(`EventProcessor: Event doesn't have a sig`);
 

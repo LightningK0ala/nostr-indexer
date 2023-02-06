@@ -35,7 +35,6 @@ export class Indexer {
     this._logger = logger;
   }
 
-  // Getters
   get db() {
     return this._db;
   }
@@ -76,9 +75,12 @@ export class Indexer {
   async start() {
     if (this.startedAt) return false;
     this._startedAt = new Date();
-    this._logger.log('Indexer started');
-    await this._relayManager.setup();
-    await this._accountManager.setup();
+    this._logger.log('� Indexer starting...');
+
+    // This will need to move somewhere else:
+    // 1. Index 
+    // await this._relayManager.setup();
+    // await this._accountManager.setup();
     return true;
   }
 

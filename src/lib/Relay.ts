@@ -77,6 +77,8 @@ export class Relay {
   }
 
   async disconnect() {
+    if (!this._connected) return true
+    this._logger.log(`Disconnecting from relay ${this._url}`);
     return this._relay.close();
   }
 

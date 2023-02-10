@@ -72,9 +72,15 @@ export class RelayManager {
   }
 
   async disconnectRelays() {
-    this._relays.forEach(async (relay) => {
-      await relay.disconnect();
-    })
+    try {
+      for (const relay of this._relays.values()) {
+        await relay.disconnect();
+      }
+      return true
+    } catch (e) {
+      this._logger.log('Error disconnecting relays', e);
+      return false
+    }
   }
 
   private setupNewRelay({ id, url }: { id: number; url: string }) {

@@ -96,10 +96,7 @@ export class Indexer {
   async stop() {
     if (!this.startedAt) return false;
     this._startedAt = undefined;
-    await this._relayManager.teardown();
-    // await this._db.$disconnect();
-    // TODO: Stop relay manager
-    return true;
+    return this._relayManager.disconnectRelays();
   }
 
   async findUser({ pubkey }: { pubkey: string }) {

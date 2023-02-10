@@ -102,72 +102,76 @@ export class AccountManager {
       opts.relays.map(
         url =>
           new Promise(async (resolve, reject) => {
-            // TODO: Wait until connected to create the relay?
-            // or include last_connected + last_connected_attempt fields in the db
-            // so we can track if it's a relay we've never connected to or a dud.
-            let complete = false;
-            const relay = await Relay.create({
-              url,
-              db: this._db,
-              logger: new Logger({ config: this._logger.config }),
-              eventProcessor: this._eventProcessor,
-              onDisconnect: () => {
-                if (complete) resolve(relay)
-                reject(new Error(`❌ Relay disconnected without returning data ${url}`))
-              },
-              onError: (e: any) => { reject(e) }
-            });
-            // Note: Not using upsert because of timeout issues
-            let userRelay = await this._db.client.userRelay.findUnique({ where: { user_id_relay_id: { user_id: user.id, relay_id: relay.id } } })
-            if (!userRelay) {
-              userRelay = await this._db.client.userRelay.create({
-                data: {
-                  user_id: user.id,
-                  relay_id: relay.id,
-                  source: UserRelaySource.MANUAL,
-                }
-              })
+            try {
+              // TODO: Wait until connected to create the relay?
+              // or include last_connected + last_connected_attempt fields in the db
+              // so we can track if it's a relay we've never connected to or a dud.
+              let complete = false;
+              const relay = await Relay.create({
+                url,
+                db: this._db,
+                logger: new Logger({ config: this._logger.config }),
+                eventProcessor: this._eventProcessor,
+                onDisconnect: () => {
+                  if (complete) resolve(relay)
+                  reject(new Error(`❌ Relay disconnected without returning data ${url}`))
+                },
+                onError: (e: any) => { reject(e) }
+              });
+              // Note: Not using upsert because of timeout issues
+              let userRelay = await this._db.client.userRelay.findUnique({ where: { user_id_relay_id: { user_id: user.id, relay_id: relay.id } } })
+              if (!userRelay) {
+                userRelay = await this._db.client.userRelay.create({
+                  data: {
+                    user_id: user.id,
+                    relay_id: relay.id,
+                    source: UserRelaySource.MANUAL,
+                  }
+                })
+              }
+              const syncUserRelay = async () => {
+                if (!userRelay) return
+                await this._db.client.userRelay.update({
+                  where: { id: userRelay.id },
+                  data: {
+                    last_received: new Date(),
+                  }
+                })
+              }
+              await relay.connect();
+              // 10 second timeout if this doesn't respond quickly enough
+              const timeout = setTimeout(async () => {
+                await relay.disconnect()
+                reject(new Error(`Relay took to long to respond ${url}`))
+              }, 10000)
+              // Collect as much information as possible about the account
+              // from event kinds that only require 1 event.
+              await relay.subscribeSync({
+                onEvent: syncUserRelay,
+                filters: [
+                  { kinds: [Kind.RecommendRelay], authors: [pubkey], limit: 1 },
+                ],
+              });
+              await relay.subscribeSync({
+                onEvent: syncUserRelay,
+                filters: [
+                  { kinds: [Kind.Metadata], authors: [pubkey], limit: 1 },
+                ],
+              });
+              await relay.subscribeSync({
+                onEvent: syncUserRelay,
+                filters: [
+                  { kinds: [Kind.Contacts], authors: [pubkey], limit: 1 },
+                ],
+              });
+              clearTimeout(timeout)
+              complete = true
+              this._logger.log(`✔️  Finished collecting account info from relay ${url}`)
+              await relay.disconnect();
+              resolve(relay);
+            } catch (e) {
+              reject(e)
             }
-            const syncUserRelay = async () => {
-              if (!userRelay) return
-              await this._db.client.userRelay.update({
-                where: { id: userRelay.id },
-                data: {
-                  last_received: new Date(),
-                }
-              })
-            }
-            await relay.connect();
-            // 10 second timeout if this doesn't respond quickly enough
-            const timeout = setTimeout(async () => {
-              await relay.disconnect()
-              reject(new Error(`Relay took to long to respond ${url}`))
-            }, 10000)
-            // Collect as much information as possible about the account
-            // from event kinds that only require 1 event.
-            await relay.subscribeSync({
-              onEvent: syncUserRelay,
-              filters: [
-                { kinds: [Kind.RecommendRelay], authors: [pubkey], limit: 1 },
-              ],
-            });
-            await relay.subscribeSync({
-              onEvent: syncUserRelay,
-              filters: [
-                { kinds: [Kind.Metadata], authors: [pubkey], limit: 1 },
-              ],
-            });
-            await relay.subscribeSync({
-              onEvent: syncUserRelay,
-              filters: [
-                { kinds: [Kind.Contacts], authors: [pubkey], limit: 1 },
-              ],
-            });
-            clearTimeout(timeout)
-            complete = true
-            this._logger.log(`✔️  Finished collecting account info from relay ${url}`)
-            await relay.disconnect();
-            resolve(relay);
           })
       )
     )
@@ -180,7 +184,7 @@ export class AccountManager {
         this._logger.log('👤 Added account');
       })
       .catch(e => {
-        throw new Error(`❌ Failed to add account: ${e}`);
+        this._logger.log(`❌ Failed to add account: ${e}`);
       });
     // 1. Fetch kind 1
     // 2.

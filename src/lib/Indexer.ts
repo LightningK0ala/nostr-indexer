@@ -64,6 +64,10 @@ export class Indexer {
     return this.relayManager.addRelay(opts.url);
   }
 
+  async removeRelay(opts: { url: string }) {
+    return this.relayManager.removeRelay(opts.url);
+  }
+
   async addAccount(opts: { pubkey: string; relays: string[] }) {
     this._logger.log("Adding account")
     return this.accountManager.addAccount(opts);

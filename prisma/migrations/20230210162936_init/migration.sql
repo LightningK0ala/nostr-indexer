@@ -30,6 +30,7 @@ CREATE TABLE "Relay" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "url" TEXT NOT NULL,
     "added_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "last_connected_at" DATETIME,
     "name" TEXT,
     "contact" TEXT,
     "supported_nips" TEXT,

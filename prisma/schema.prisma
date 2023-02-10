@@ -43,6 +43,7 @@ model Relay {
   id                       Int         @id @default(autoincrement())
   url                      String      @unique
   added_at                 DateTime    @default(now())
+  last_connected_at        DateTime?
   name                     String?
   contact                  String?
   supported_nips           String?
@@ -103,7 +104,7 @@ model Event {
   event_content    String?
   event_tags       String?
   event_created_at DateTime
-  from_relay       Relay?    @relation(fields: [from_relay_url], references: [url])
+  from_relay       Relay?    @relation(fields: [from_relay_url], references: [url], onDelete: SetNull)
   from_relay_url   String?
   added_at         DateTime  @default(now())
 }

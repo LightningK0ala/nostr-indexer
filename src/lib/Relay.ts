@@ -15,8 +15,9 @@ type RelayCreateOpts = {
 
 export class Relay {
   private _id: number;
+  private _db: DbClient;
   private _url: string;
-  private _connected: boolean = false;
+  private _connectedAt?: Date = undefined;
   private _relay: NostrRelay;
   private _logger: Logger;
   private _eventProcessor: EventProcessor;
@@ -25,26 +26,30 @@ export class Relay {
     id: number;
   } & RelayCreateOpts) {
     this._id = opts.id;
+    this._db = opts.db;
     this._url = opts.url;
     opts.logger.type = LogType.RELAY;
     this._logger = opts.logger;
     this._eventProcessor = opts.eventProcessor;
     this._relay = relayInit(this._url);
-    this._relay.on('connect', () => {
+    this._relay.on('connect', async () => {
       this._logger.log(`🔌 ✅ Connected to relay ${this._url}`);
-      this._connected = true;
+      await this._db.client.relay.update({
+        where: { id: this._id }, data: { last_connected_at: new Date() }
+      })
+      this._connectedAt = new Date();
     });
 
     this._relay.on('error', () => {
-      const errMsg = `Failed to connect to relay ${this._url}`
+      const errMsg = `🔌 ❌ Error connecting to relay ${this._url}`
       this._logger.log(errMsg);
-      this._connected = false;
+      this._connectedAt = undefined;
       if (opts.onError) opts.onError(new Error(errMsg))
     });
 
     this._relay.on('disconnect', () => {
       this._logger.log(`🔌 ❌ Disconnected from relay ${this._url}`);
-      this._connected = false;
+      this._connectedAt = undefined;
       if (opts.onDisconnect) opts.onDisconnect()
     });
   }
@@ -57,7 +62,10 @@ export class Relay {
     return this._url;
   }
   get connected() {
-    return this._connected;
+    return !!this._connectedAt;
+  }
+  get connectedAt() {
+    return this._connectedAt;
   }
 
   static async create(opts: RelayCreateOpts) {
@@ -71,14 +79,13 @@ export class Relay {
   }
 
   async connect() {
-    return this._relay.connect().catch(e => {
-      this._logger.log(`Failed to connect to relay ${this._url}`);
-    })
+    if (this._connectedAt) return true
+    this._logger.log(`🔌 Connecting to relay ${this._url}...`)
+    return this._relay.connect()
   }
 
   async disconnect() {
-    if (!this._connected) return true
-    this._logger.log(`Disconnecting from relay ${this._url}`);
+    if (!this._connectedAt) return true
     return this._relay.close();
   }
 

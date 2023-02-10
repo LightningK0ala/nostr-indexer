@@ -5,6 +5,7 @@ export enum LogType {
   INDEXER = "INDEXER",
   EVENT_PROCESSOR = "EVENT_PROCESSOR",
   ACCOUNT_MANAGER = "ACCOUNT_MANAGER",
+  RELAY_MANAGER = "RELAY_MANAGER",
   RELAY = "RELAY",
   DEFAULT = ""
 }
@@ -38,6 +39,8 @@ export class Logger {
         return chalk.green;
       case LogType.ACCOUNT_MANAGER:
         return chalk.yellow;
+      case LogType.RELAY_MANAGER:
+        return chalk.cyan;
       case LogType.RELAY:
         return chalk.magenta;
       case LogType.DEFAULT:

@@ -1,25 +1,29 @@
 import { Event, Filter, Sub } from '../@types/nostr-tools-shim';
-import { Logger } from './Logger';
+import { Logger, LogType } from './Logger';
 import { Relay } from './Relay';
 import { Subscription } from './Subscription';
 import { sha1Hash } from '../utils/crypto';
 import { DbClient, DbRelay } from './DbClient';
 import EventProcessor from './EventProcessor';
 
+type RelayManagerOpts = {
+  db: DbClient;
+  logger: Logger;
+  eventProcessor: EventProcessor;
+}
+
 export class RelayManager {
   private _db: DbClient;
+  private _isSetup = false;
   private _relays = new Map<number, Relay>();
   private _logger: Logger;
   // Key is the hash for the stringified subscription filters
   private _subscriptions = new Map<string, Subscription>();
   private _eventProcessor: EventProcessor;
 
-  constructor(opts: {
-    db: DbClient;
-    logger: Logger;
-    eventProcessor: EventProcessor;
-  }) {
+  constructor(opts: RelayManagerOpts) {
     this._db = opts.db;
+    opts.logger.type = LogType.RELAY_MANAGER;
     this._logger = opts.logger;
     this._eventProcessor = opts.eventProcessor;
   }
@@ -38,12 +42,39 @@ export class RelayManager {
     );
   }
 
-  async setup() {
+  async loadRelaysFromDb() {
+    if (this._isSetup) return
     this._logger.log('Loading relays from db');
     const relays = await this._db.client.relay.findMany();
-    relays.forEach(({ id, url }: DbRelay) => {
-      this.setupNewRelay({ id, url });
+    relays.forEach(async ({ id, url }: DbRelay) => {
+      const relay = new Relay({
+        id,
+        url,
+        db: this._db,
+        logger: this._logger,
+        eventProcessor: this._eventProcessor
+      });
+      this._relays.set(id, relay);
     });
+    this._isSetup = true;
+  }
+
+  static async create(opts: RelayManagerOpts) {
+    const rm = new RelayManager(opts);
+    await rm.loadRelaysFromDb()
+    return rm
+  }
+
+  async connectRelays() {
+    return this._relays.forEach((relay) => {
+      relay.connect();
+    })
+  }
+
+  async disconnectRelays() {
+    this._relays.forEach(async (relay) => {
+      await relay.disconnect();
+    })
   }
 
   private setupNewRelay({ id, url }: { id: number; url: string }) {
@@ -55,10 +86,10 @@ export class RelayManager {
       logger: this._logger,
       eventProcessor: this._eventProcessor
     });
-    relay.connect();
-    this._relays.set(id, relay);
-    // Add all existing subscriptions to the relay
-    this._subscriptions.forEach(subscription => relay.subscribe(subscription));
+    // relay.connect();
+    // this._relays.set(id, relay);
+    // // Add all existing subscriptions to the relay
+    // this._subscriptions.forEach(subscription => relay.subscribe(subscription));
   }
 
   async teardown() {

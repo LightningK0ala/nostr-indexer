@@ -5,19 +5,20 @@ import { RelayManager } from './lib/RelayManager';
 import { Logger } from './lib/Logger';
 import { DbClient } from './lib/DbClient';
 import EventProcessor from './lib/EventProcessor';
+import { SubscriptionManager } from './lib/SubscriptionManager';
 
 // Shim Websocket for NodeJS
 Object.assign(global, { WebSocket: require('ws') });
 
-export const createIndexer = (cfg: Config) => {
-
+export const createIndexer = async (cfg: Config) => {
   const config = new Config(cfg);
   const newLogger = function () {
     return new Logger({ config: cfg });
   }
   const db = new DbClient({ dbPath: cfg.dbPath, logger: newLogger() });
   const eventProcessor = new EventProcessor({ db, logger: newLogger() })
-  const relayManager = new RelayManager({ db, eventProcessor, logger: newLogger() })
+  const relayManager = await RelayManager.create({ db, eventProcessor, logger: newLogger() })
+  const subscriptionManager = new SubscriptionManager({ logger: newLogger() })
   const accountManager = new AccountManager({
     db,
     logger: newLogger(),
@@ -29,6 +30,7 @@ export const createIndexer = (cfg: Config) => {
     db,
     config,
     relayManager,
+    subscriptionManager,
     accountManager,
     logger: newLogger(),
   });

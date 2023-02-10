@@ -71,11 +71,13 @@ export class Relay {
   }
 
   async connect() {
-    return this._relay.connect()
+    return this._relay.connect().catch(e => {
+      this._logger.log(`Failed to connect to relay ${this._url}`);
+    })
   }
 
   async disconnect() {
-    await this._relay.close();
+    return this._relay.close();
   }
 
   async subscribeSync(opts: {

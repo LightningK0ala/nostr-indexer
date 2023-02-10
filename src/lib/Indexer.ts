@@ -5,35 +5,34 @@ import { Config } from './Config';
 import { Logger, LogType } from './Logger';
 import { AccountManager } from './AccountManager';
 import { DbClient } from './DbClient';
+import { SubscriptionManager } from './SubscriptionManager';
+import { User } from '@prisma/client';
 
 export class Indexer {
   private _db: DbClient;
   private _config: Config;
   private _relayManager: RelayManager;
+  private _subscriptionManager: SubscriptionManager;
   private _accountManager: AccountManager;
   private _startedAt?: Date;
   private _logger: Logger;
   public count: number = 0;
 
-  constructor({
-    db,
-    config,
-    relayManager,
-    accountManager,
-    logger,
-  }: {
+  constructor(opts: {
     db: DbClient;
     config: Config;
     relayManager: RelayManager;
+    subscriptionManager: SubscriptionManager;
     accountManager: AccountManager;
     logger: Logger;
   }) {
-    this._db = db;
-    this._config = config;
-    this._relayManager = relayManager;
-    this._accountManager = accountManager;
-    logger.type = LogType.INDEXER;
-    this._logger = logger;
+    this._db = opts.db;
+    this._config = opts.config;
+    this._relayManager = opts.relayManager;
+    this._subscriptionManager = opts.subscriptionManager;
+    this._accountManager = opts.accountManager;
+    opts.logger.type = LogType.INDEXER;
+    this._logger = opts.logger;
   }
 
   get db() {
@@ -61,8 +60,8 @@ export class Indexer {
     return this._relayManager.subscriptions;
   }
 
-  async addRelay(url: string) {
-    return this.relayManager.addRelay(url);
+  async addRelay(opts: { url: string }) {
+    return this.relayManager.addRelay(opts.url);
   }
 
   async addAccount(opts: { pubkey: string; relays: string[] }) {
@@ -79,8 +78,16 @@ export class Indexer {
     this._startedAt = new Date();
     this._logger.log('� Indexer starting...');
 
+    await this._relayManager.connectRelays();
+
     // This will need to move somewhere else:
-    // 1. Index 
+    // 1. Index
+    const users = await this._db.client.user.findMany()
+    users.forEach((user: User) => {
+      // this._subscriptionManager.addSubscription()
+
+    })
+
     // await this._relayManager.setup();
     // await this._accountManager.setup();
     return true;

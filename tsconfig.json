@@ -26,7 +26,9 @@
     // noUnused* overlap with @typescript-eslint/no-unused-vars, can disable if duplicative
     // TODO: Add this again
     // "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // TODO: Add this again
+    // "noUnusedLocals": true,
+    "noUnusedParameters": false,
     // use Node's module resolution algorithm, instead of the legacy TS one
     "moduleResolution": "node",
     // transpile JSX to React.createElement
